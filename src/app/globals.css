@@ -95,3 +95,76 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes landing-page-gradient-animation {
+  0%, 100% {
+    background-size: 400% 400%;
+    background-position: left top;
+  }
+  25% {
+    background-size: 400% 400%;
+    background-position: right top;
+  }
+  50% {
+    background-size: 400% 400%;
+    background-position: right bottom;
+  }
+  75% {
+    background-size: 400% 400%;
+    background-position: left bottom;
+  }
+}
+
+@keyframes text-color-animation {
+  0%, 100% {
+    color: hsl(var(--primary-foreground));
+    transition: color 0.3s ease;
+  }
+  25% {
+    color: hsl(var(--tertiary-foreground));
+    transition: color 0.3s ease;
+  }
+  50% {
+    color: hsl(var(--secondary-foreground));
+    transition: color 0.3s ease;
+  }
+  75% {
+    color: hsl(var(--tertiary-foreground));
+    transition: color 0.3s ease;
+  }
+}
+
+@keyframes signin-button-animation {
+  0%, 100% {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: hsl(var(--primary-foreground));
+    color: hsl(var(--primary-foreground));
+  }
+  25% {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: hsl(var(--tertiary-foreground));
+    color: hsl(var(--tertiary-foreground));
+  }
+  50% {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: hsl(var(--secondary-foreground));
+    color: hsl(var(--secondary-foreground));
+  }
+  75% {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: hsl(var(--tertiary-foreground));
+    color: hsl(var(--tertiary-foreground));
+  }
+}
+
+.animate-landing-gradient {
+  animation: landing-page-gradient-animation 15s ease infinite;
+}
+
+.animate-text-color {
+  animation: text-color-animation 12s ease-in-out infinite;
+}
+
+.animate-signin-button {
+  animation: signin-button-animation 12s ease-in-out infinite;
+}

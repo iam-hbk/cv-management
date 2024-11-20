@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import { Great_Vibes, Urbanist as FontSans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import Providers from "@/providers";
 
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
 });
+
 const fontGreatVibes = Great_Vibes({
   subsets: ["latin"],
   weight: ["400"],
@@ -25,14 +27,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head />
       <body
         className={cn(
-          "font-sans antialiased",
+          "min-h-screen font-sans antialiased",
           fontSans.variable,
           fontGreatVibes.variable
         )}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

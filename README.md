@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CV Template Generation Tool
 
-## Getting Started
+A sophisticated web-based platform that streamlines the CV creation process by offering both AI-assisted and manual paths for generating standardized CVs.
 
-First, run the development server:
+## Application Flow
+![Application Flow Diagram](/app-flow.png)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🌟 Key Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Two Flexible Paths
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+#### 1. AI-Assisted Generation
+- Upload existing CV (PDF, DOC, DOCX)
+- AI-powered information extraction
+- Auto-filled forms with extracted data
+- Review and edit capabilities
+- Smart confidence indicators for extracted data
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+#### 2. Manual Entry
+- Structured multi-step form interface
+- Real-time validation
+- Progress saving
+- Intuitive section organization
 
-## Learn More
+### Common Features
+- Standardized company template application
+- Real-time document preview
+- Downloadable Word document output
+- Comprehensive form sections:
+  - Executive Summary
+  - Personal Information
+  - Work Experience
+  - Education
+  - Skills
+  - Additional custom fields
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠 Technical Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Frontend
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Next-Auth for authentication
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Backend
+- Node.js
+- Mistral LLM for AI processing
+- Document parsing engine
+- Template generation system

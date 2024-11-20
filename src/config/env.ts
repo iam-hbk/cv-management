@@ -1,11 +1,14 @@
 import { z } from "zod";
 
+// Add this to ensure this code only runs on server
+if (typeof window !== 'undefined') {
+  throw new Error('This module can only be used on the server side');
+}
+
 const envSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  // Add other environment variables as needed
+  DATABASE_URL: z.string(),
 });
 
-// This will throw an error if the environment variables are invalid
 export const env = envSchema.parse({
   DATABASE_URL: process.env.DATABASE_URL,
-}); 
+});
