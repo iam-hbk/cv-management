@@ -1,11 +1,11 @@
 "use client"
 
 import {
+  BookOpenText,
   Folder,
   MoreHorizontal,
   Share,
   Trash2,
-  type LucideIcon,
 } from "lucide-react"
 
 import {
@@ -24,29 +24,29 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import Link from "next/link"
 
 export function NavProjects({
-  projects,
+  recents,
 }: {
-  projects: {
+  recents: {
     name: string
     url: string
-    icon: LucideIcon
   }[]
 }) {
   const { isMobile } = useSidebar()
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Projects</SidebarGroupLabel>
+      <SidebarGroupLabel>Recents</SidebarGroupLabel>
       <SidebarMenu>
-        {projects.map((item) => (
+        {recents.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
-              <a href={item.url}>
-                <item.icon />
+              <Link href={item.url}>
+                <BookOpenText className="mr-2 h-4 w-4" />
                 <span>{item.name}</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

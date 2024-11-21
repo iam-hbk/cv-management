@@ -14,7 +14,7 @@ export const {
 } = NextAuth({
   adapter: DrizzleAdapter(db),
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
   },
   pages: {
     signIn: "/login",
@@ -23,7 +23,7 @@ export const {
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         const { email, password } = credentials;
@@ -34,8 +34,11 @@ export const {
 
         if (!user || !user.hashedPassword) return null;
 
-        const isValid = await comparePasswords(password as string, user.hashedPassword);
-        
+        const isValid = await comparePasswords(
+          password as string,
+          user.hashedPassword,
+        );
+
         if (!isValid) return null;
 
         return {
@@ -61,3 +64,8 @@ export const {
     },
   },
 });
+
+export const getUser = async () => {
+  const session = await auth();
+  return session?.user;
+};

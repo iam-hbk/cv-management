@@ -1,23 +1,18 @@
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
-import { signOut } from "@/lib/auth";
-import { redirect } from "next/navigation";
 
-async function signOutAction() {
-  "use server";
-  await signOut();
-  redirect("/login");
-}
 
-export default async function Dashboard() {
+export default function Dashboard() {
   return (
     <div>
       <h1>Dashboard</h1>
-      <form action={signOutAction}>
-        <Button type="submit">
-          <LogOut />
-        </Button>
-      </form>
+      
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+          <div className="aspect-video rounded-xl bg-muted/50" />
+          <div className="aspect-video rounded-xl bg-muted/50" />
+          <div className="aspect-video rounded-xl bg-muted/50" />
+        </div>
+        <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
+      </div>
     </div>
   );
 }

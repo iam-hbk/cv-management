@@ -17,18 +17,28 @@ import { Button } from "@/components/ui/button";
 import { type LoginFormData, loginSchema } from "@/schemas/auth.schema";
 import { useMutation } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function LoginForm() {
+  const router = useRouter();
   const mutation = useMutation({
     mutationFn: async (values: LoginFormData) => {
       const result = await signIn("credentials", {
         email: values.email,
         password: values.password,
-        redirectTo: "/dashboard",
+        redirect: false,
       });
-
-      if (!result?.ok) {
-        throw new Error(result?.error || "Invalid credentials");
+      console.log("sign in result:", result);
+      if (!result) {
+        throw new Error("Something went wrong, please try again.");
+      }
+      if (result.error) {
+        if (result.error === "CredentialsSignin") {
+          throw new Error("Invalid credentials");
+        }
+        throw new Error(
+          result.error || "Something went wrong, please try again.",
+        );
       }
 
       return result;
@@ -47,6 +57,7 @@ export function LoginForm() {
       onSuccess: () => {
         toast.success("Signed in successfully");
         form.reset();
+        router.push("/dashboard");
       },
       onError: (error: Error) => {
         toast.error(error.message || "Something went wrong");
