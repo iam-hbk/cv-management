@@ -28,7 +28,6 @@ export function LoginForm() {
         password: values.password,
         redirect: false,
       });
-      console.log("sign in result:", result);
       if (!result) {
         throw new Error("Something went wrong, please try again.");
       }
