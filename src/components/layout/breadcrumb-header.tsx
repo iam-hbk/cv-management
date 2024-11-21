@@ -31,7 +31,7 @@ export function BreadcrumbHeader() {
               const href = `/${paths.slice(0, index + 1).join("/")}`;
 
               return (
-                <div key={path}>
+                <div key={path} className="flex flex-row items-center">
                   <BreadcrumbItem key={path} className="hidden md:block">
                     {isLast ? (
                       <BreadcrumbPage className="capitalize">
