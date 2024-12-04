@@ -1,4 +1,3 @@
-// components/CVForm/PersonalInfoForm.tsx
 "use client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,22 +15,16 @@ import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Select, SelectContent, SelectTrigger, SelectItem, SelectValue } from "../ui/select";
 
-export function PersonalInfoForm() {
+interface PersonalInfoFormProps {
+  onSubmit: (data: PersonalInfoSchema) => void;
+  initialData: PersonalInfoSchema;
+}
+
+export function PersonalInfoForm({ onSubmit, initialData }: PersonalInfoFormProps) {
   const form = useForm<PersonalInfoSchema>({
     resolver: zodResolver(personalInfoSchema),
-    defaultValues: {
-      location: "",
-      availability: "",
-      nationality: "",
-      currentSalary: 0,
-      expectedSalary: 0,
-      idNumber: "",
-    },
+    defaultValues: initialData
   });
-
-  const onSubmit = (data: PersonalInfoSchema) => {
-    console.log(data);
-  };
 
   return (
     <Form {...form}>
@@ -39,6 +32,76 @@ export function PersonalInfoForm() {
         onSubmit={form.handleSubmit(onSubmit)}
         className="grid grid-cols-2 gap-4 p-4"
       >
+        <FormField
+          control={form.control}
+          name="firstName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>First Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="lastName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Last Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone</FormLabel>
+              <FormControl>
+                <Input type="tel" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="profession"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Profession</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="location"
