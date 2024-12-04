@@ -1,10 +1,8 @@
-// src/components/CVForm/SkillsForm.tsx
 "use client";
 
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { skillsSchema } from "@/schemas/cv.schema";
-import type { z } from "zod";
+import { skillsSchema, SkillsSchema } from "@/schemas/cv.schema";
 import {
   Form,
   FormControl,
@@ -25,50 +23,72 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 
-type SkillsFormData = z.infer<typeof skillsSchema>;
-
-const proficiencyLevels = ["Beginner", "Intermediate", "Advanced", "Expert"] as const;
+const proficiencyLevels = [
+  "Beginner",
+  "Intermediate",
+  "Advanced",
+  "Expert",
+] as const;
 
 const currentYear = new Date().getFullYear();
 
-export function SkillsForm({ onSubmit }: { onSubmit: (data: SkillsFormData) => void }) {
-  const form = useForm<SkillsFormData>({
+interface SkillsFormProps {
+  onSubmit: (data: SkillsSchema) => void;
+  initialData: SkillsSchema;
+}
+
+export function SkillsForm({ onSubmit, initialData }: SkillsFormProps) {
+  const form = useForm<SkillsSchema>({
     resolver: zodResolver(skillsSchema),
     defaultValues: {
-      computerSkills: [""],
-      otherSkills: [""],
-      skillsMatrix: [
-        {
-          skill: "",
-          yearsExperience: 0,
-          proficiency: "Beginner",
-          lastUsed: currentYear,
-        },
-      ],
+      computerSkills: initialData.computerSkills,
+      otherSkills: initialData.otherSkills,
+      skillsMatrix:
+        initialData.skillsMatrix.length > 0
+          ? initialData.skillsMatrix
+          : undefined,
     },
   });
 
-  const { fields: computerSkillsFields, append: appendComputerSkill, remove: removeComputerSkill } = {
-    fields: form.watch('computerSkills').map((value, index) => ({ id: index, value })),
+  const {
+    fields: computerSkillsFields,
+    append: appendComputerSkill,
+    remove: removeComputerSkill,
+  } = {
+    fields: form
+      .watch("computerSkills")
+      .map((value, index) => ({ id: index, value })),
     append: (value: string) => {
-      const currentSkills = form.getValues('computerSkills');
-      form.setValue('computerSkills', [...currentSkills, value]);
+      const currentSkills = form.getValues("computerSkills");
+      form.setValue("computerSkills", [...currentSkills, value]);
     },
     remove: (index: number) => {
-      const currentSkills = form.getValues('computerSkills');
-      form.setValue('computerSkills', currentSkills.filter((_, i) => i !== index));
+      const currentSkills = form.getValues("computerSkills");
+      form.setValue(
+        "computerSkills",
+        currentSkills.filter((_, i) => i !== index),
+      );
     },
   };
 
-  const { fields: otherSkillsFields, append: appendOtherSkill, remove: removeOtherSkill } = {
-    fields: form.watch('otherSkills').map((value, index) => ({ id: index, value })),
+  const {
+    fields: otherSkillsFields,
+    append: appendOtherSkill,
+    remove: removeOtherSkill,
+  } = {
+    fields: form
+      .watch("otherSkills")
+      .map((value, index) => ({ id: index, value })),
     append: (value: string) => {
-      const currentSkills = form.getValues('otherSkills');
-      form.setValue('otherSkills', [...currentSkills, value]);
+      const currentSkills = form.getValues("otherSkills");
+      form.setValue("otherSkills", [...currentSkills, value]);
     },
     remove: (index: number) => {
-      const currentSkills = form.getValues('otherSkills');
-      form.setValue('otherSkills', currentSkills.filter((_, i) => i !== index));
+      const currentSkills = form.getValues("otherSkills");
+      form.setValue(
+        "otherSkills",
+        currentSkills.filter((_, i) => i !== index),
+      );
     },
   };
 
@@ -82,7 +102,7 @@ export function SkillsForm({ onSubmit }: { onSubmit: (data: SkillsFormData) => v
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Computer Skills Section */}
         <div className="space-y-4">
-          <h3 className="font-medium text-lg">Computer Skills</h3>
+          <h3 className="text-lg font-medium">Computer Skills</h3>
           {computerSkillsFields.map((field, index) => (
             <div key={field.id} className="flex gap-2">
               <FormField
@@ -114,14 +134,14 @@ export function SkillsForm({ onSubmit }: { onSubmit: (data: SkillsFormData) => v
             variant="outline"
             onClick={() => appendComputerSkill("")}
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add Computer Skill
           </Button>
         </div>
 
         {/* Other Skills Section */}
         <div className="space-y-4">
-          <h3 className="font-medium text-lg">Other Skills</h3>
+          <h3 className="text-lg font-medium">Other Skills</h3>
           {otherSkillsFields.map((field, index) => (
             <div key={field.id} className="flex gap-2">
               <FormField
@@ -153,14 +173,14 @@ export function SkillsForm({ onSubmit }: { onSubmit: (data: SkillsFormData) => v
             variant="outline"
             onClick={() => appendOtherSkill("")}
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add Other Skill
           </Button>
         </div>
 
         {/* Skills Matrix Section */}
         <div className="space-y-4">
-          <h3 className="font-medium text-lg">Skills Matrix</h3>
+          <h3 className="text-lg font-medium">Skills Matrix</h3>
           {skillsMatrix.fields.map((field, index) => (
             <Card key={field.id}>
               <CardContent className="pt-6">
@@ -172,7 +192,10 @@ export function SkillsForm({ onSubmit }: { onSubmit: (data: SkillsFormData) => v
                       <FormItem>
                         <FormLabel>Skill Name</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g., JavaScript, Project Management" />
+                          <Input
+                            {...field}
+                            placeholder="e.g., JavaScript, Project Management"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -190,7 +213,9 @@ export function SkillsForm({ onSubmit }: { onSubmit: (data: SkillsFormData) => v
                             type="number"
                             min={0}
                             {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value))
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -204,7 +229,10 @@ export function SkillsForm({ onSubmit }: { onSubmit: (data: SkillsFormData) => v
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Proficiency Level</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select level" />
@@ -235,7 +263,9 @@ export function SkillsForm({ onSubmit }: { onSubmit: (data: SkillsFormData) => v
                             min={1900}
                             max={currentYear}
                             {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value))
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -252,7 +282,7 @@ export function SkillsForm({ onSubmit }: { onSubmit: (data: SkillsFormData) => v
                     className="mt-4"
                     onClick={() => skillsMatrix.remove(index)}
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
+                    <Trash2 className="mr-2 h-4 w-4" />
                     Remove Skill
                   </Button>
                 )}
@@ -272,7 +302,7 @@ export function SkillsForm({ onSubmit }: { onSubmit: (data: SkillsFormData) => v
               })
             }
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add Skill Matrix Entry
           </Button>
         </div>

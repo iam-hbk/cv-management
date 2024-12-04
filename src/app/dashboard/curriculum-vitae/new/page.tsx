@@ -1,4 +1,3 @@
-// src/app/dashboard/cv/new/page.tsx
 "use client";
 
 import { useAtom, useSetAtom } from "jotai";
@@ -101,13 +100,25 @@ export default function NewCVPage() {
   const renderStep = () => {
     switch (currentStep) {
       case 0:
-        return <PersonalInfoForm onSubmit={(data) => handleFormSubmit(0, data)} />;
+        return <PersonalInfoForm 
+          onSubmit={(data) => handleFormSubmit(0, data)} 
+          initialData={personalInfo}
+        />;
       case 1:
-        return <WorkExperienceForm onSubmit={(data) => handleFormSubmit(1, data)} />;
+        return <WorkExperienceForm 
+          onSubmit={(data) => handleFormSubmit(1, data)} 
+          initialData={workExperience}
+        />;
       case 2:
-        return <EducationForm onSubmit={(data) => handleFormSubmit(2, data)} />;
+        return <EducationForm 
+          onSubmit={(data) => handleFormSubmit(2, data)} 
+          initialData={education}
+        />;
       case 3:
-        return <SkillsForm onSubmit={(data) => handleFormSubmit(3, data)} />;
+        return <SkillsForm 
+          onSubmit={(data) => handleFormSubmit(3, data)} 
+          initialData={skills}
+        />;
       case 4:
         return (
           <div className="space-y-6">
@@ -205,13 +216,15 @@ export default function NewCVPage() {
 
       {/* Navigation */}
       <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-          disabled={currentStep === 0}
-        >
-          Previous
-        </Button>
+        {currentStep > 0 && (  // Only show Previous button if not on first step
+          <Button
+            variant="outline"
+            onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+          >
+            Previous
+          </Button>
+        )}
+        {currentStep === 0 && <div />} {/* Empty div to maintain spacing when button is hidden */}
         {currentStep === steps.length - 1 ? (
           <Button onClick={handleFinalSubmit}>Generate CV</Button>
         ) : null}

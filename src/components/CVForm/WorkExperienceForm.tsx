@@ -30,21 +30,17 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import FormErrors from "./FormErrors";
-import { z } from "zod";
 
-export function WorkExperienceForm({
-  onSubmit,
-}: {
+interface WorkExperienceFormProps {
   onSubmit: (data: WorkExperienceSchema[]) => void;
-}) {
+  initialData: WorkExperienceSchema[];
+}
+
+export function WorkExperienceForm({ onSubmit, initialData }: WorkExperienceFormProps) {
   const form = useForm<{ experiences: WorkExperienceSchema[] }>({
-    resolver: zodResolver(
-      z.object({
-        experiences: workExperienceSchema.array(),
-      })
-    ),
+    resolver: zodResolver(workExperienceSchema),
     defaultValues: {
-      experiences: [
+      experiences: initialData.length > 0 ? initialData : [
         {
           company: "",
           position: "",

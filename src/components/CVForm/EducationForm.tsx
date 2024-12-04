@@ -3,7 +3,7 @@
 
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { EducationSchema, educationSchema } from "@/schemas/cv.schema";
+import { educationSchema, EducationSchema } from "@/schemas/cv.schema";
 import {
   Form,
   FormControl,
@@ -26,34 +26,30 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import FormErrors from "./FormErrors";
-import { z } from "zod";
 
-export function EducationForm({
-  onSubmit,
-}: {
+interface EducationFormProps {
   onSubmit: (data: EducationSchema[]) => void;
-}) {
-  const form = useForm<{ qualifications: EducationSchema[] }>({
-    resolver: zodResolver(
-      z.object({
-        qualifications: educationSchema.array(),
-      }),
-    ),
+  initialData: EducationSchema[];
+}
+const defaultEducation: EducationSchema[] = [
+  {
+    institution: "",
+    qualification: "",
+    completionDate: new Date().getFullYear(),
+    completed: false,
+  },
+];
+export function EducationForm({ onSubmit, initialData }: EducationFormProps) {
+  const form = useForm<{ educations: EducationSchema[] }>({
+    resolver: zodResolver(educationSchema),
     defaultValues: {
-      qualifications: [
-        {
-          institution: "",
-          qualification: "",
-          completionDate: new Date().getFullYear(),
-          completed: false,
-        },
-      ],
+      educations: initialData.length > 0 ? initialData : defaultEducation,
     },
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "qualifications",
+    name: "educations",
   });
 
   return (
@@ -61,7 +57,7 @@ export function EducationForm({
       <form
         onSubmit={form.handleSubmit((data) => {
           console.log("--------->>>>>>>>>", data);
-          onSubmit(data.qualifications);
+          onSubmit(data.educations);
         })}
       >
         <div className="space-y-4">
@@ -71,7 +67,7 @@ export function EducationForm({
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name={`qualifications.${index}.institution`}
+                    name={`educations.${index}.institution`}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Institution</FormLabel>
@@ -85,7 +81,7 @@ export function EducationForm({
 
                   <FormField
                     control={form.control}
-                    name={`qualifications.${index}.qualification`}
+                    name={`educations.${index}.qualification`}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Qualification</FormLabel>
@@ -99,7 +95,7 @@ export function EducationForm({
 
                   <FormField
                     control={form.control}
-                    name={`qualifications.${index}.completionDate`}
+                    name={`educations.${index}.completionDate`}
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Completion Year</FormLabel>
@@ -142,7 +138,7 @@ export function EducationForm({
 
                   <FormField
                     control={form.control}
-                    name={`qualifications.${index}.completed`}
+                    name={`educations.${index}.completed`}
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                         <FormControl>
@@ -195,10 +191,7 @@ export function EducationForm({
           <Button
             onClick={() => {
               if (!form.formState.isValid) {
-                console.log(
-                  "--------->>>>>>>>>",
-                  form.getValues().qualifications,
-                );
+                console.log("--------->>>>>>>>>", form.getValues().educations);
                 console.log(form.formState.errors);
                 toast.error("Please fill in all required fields", {
                   description: <FormErrors errors={form.formState.errors} />,

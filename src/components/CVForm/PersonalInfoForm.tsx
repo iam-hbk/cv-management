@@ -15,23 +15,15 @@ import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Select, SelectContent, SelectTrigger, SelectItem, SelectValue } from "../ui/select";
 
-export function PersonalInfoForm({ onSubmit }: { onSubmit: (data: PersonalInfoSchema) => void }) {
+interface PersonalInfoFormProps {
+  onSubmit: (data: PersonalInfoSchema) => void;
+  initialData: PersonalInfoSchema;
+}
+
+export function PersonalInfoForm({ onSubmit, initialData }: PersonalInfoFormProps) {
   const form = useForm<PersonalInfoSchema>({
     resolver: zodResolver(personalInfoSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      profession: "",
-      location: "",
-      availability: "",
-      nationality: "",
-      currentSalary: 0,
-      expectedSalary: 0,
-      idNumber: "",
-      driversLicense: false,
-    },
+    defaultValues: initialData
   });
 
   return (
