@@ -28,22 +28,30 @@ import { toast } from "sonner";
 import FormErrors from "./FormErrors";
 
 interface EducationFormProps {
-  onSubmit: (data: EducationSchema[]) => void;
-  initialData: EducationSchema[];
+  onSubmit: (data: EducationSchema["educations"]) => void;
+  initialData: EducationSchema["educations"];
+  onSaveDraft: () => void;
 }
-const defaultEducation: EducationSchema[] = [
-  {
-    institution: "",
-    qualification: "",
-    completionDate: new Date().getFullYear(),
-    completed: false,
-  },
-];
-export function EducationForm({ onSubmit, initialData }: EducationFormProps) {
-  const form = useForm<{ educations: EducationSchema[] }>({
+
+export function EducationForm({
+  onSubmit,
+  initialData,
+  onSaveDraft,
+}: EducationFormProps) {
+  const form = useForm<EducationSchema>({
     resolver: zodResolver(educationSchema),
     defaultValues: {
-      educations: initialData.length > 0 ? initialData : defaultEducation,
+      educations:
+        initialData.length > 0
+          ? initialData
+          : [
+              {
+                institution: "",
+                qualification: "",
+                completionDate: new Date().getFullYear(),
+                completed: false,
+              },
+            ],
     },
   });
 
@@ -55,10 +63,18 @@ export function EducationForm({ onSubmit, initialData }: EducationFormProps) {
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit((data) => {
-          console.log("--------->>>>>>>>>", data);
-          onSubmit(data.educations);
-        })}
+        onSubmit={form.handleSubmit(
+          (data) => {
+            console.log("Form data:", data);
+            onSubmit(data.educations);
+          },
+          (errors) => {
+            console.log("Form errors:", errors);
+            toast.error("Please fill in all required fields", {
+              description: <FormErrors errors={errors} />,
+            });
+          },
+        )}
       >
         <div className="space-y-4">
           {fields.map((field, index) => (
@@ -187,22 +203,21 @@ export function EducationForm({ onSubmit, initialData }: EducationFormProps) {
             <Plus className="mr-2 h-4 w-4" />
             Add Another Qualification
           </Button>
-
-          <Button
-            onClick={() => {
-              if (!form.formState.isValid) {
-                console.log("--------->>>>>>>>>", form.getValues().educations);
-                console.log(form.formState.errors);
-                toast.error("Please fill in all required fields", {
-                  description: <FormErrors errors={form.formState.errors} />,
-                });
-              }
-            }}
-            type="submit"
-            className="w-full"
-          >
-            Save & Continue
-          </Button>
+          <div className="col-span-2 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (form.formState.isValid) {
+                  onSubmit(form.getValues().educations);
+                  onSaveDraft();
+                }
+              }}
+            >
+              Save Draft
+            </Button>
+            <Button type="submit">Save & Continue</Button>
+          </div>
         </div>
       </form>
     </Form>

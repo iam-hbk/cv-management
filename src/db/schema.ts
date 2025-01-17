@@ -108,7 +108,8 @@ export const cvs = pgTable("cvs", {
     .notNull()
     .$type<"draft" | "completed">(),
   formData: jsonb("form_data").$type<CVFormData>(),
-  aiExtractedData: jsonb("ai_extracted_data").$type<CVFormData>(),
+  isAiAssisted: boolean("is_ai_assisted").notNull().default(false),
+  jobTitle: text("title").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at"),
 });
@@ -128,3 +129,4 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type CV = typeof cvs.$inferSelect;
 export type NewCV = typeof cvs.$inferInsert;
+export type DraftCV = Omit<NewCV, "userId" | "status">;

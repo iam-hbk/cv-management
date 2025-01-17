@@ -21,7 +21,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
 import { addDays, format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { DateRange } from "react-day-picker";
+// import { DateRange } from "react-day-picker";
 import {
   Popover,
   PopoverContent,
@@ -30,27 +30,35 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import FormErrors from "./FormErrors";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface WorkExperienceFormProps {
-  onSubmit: (data: WorkExperienceSchema[]) => void;
-  initialData: WorkExperienceSchema[];
+  onSubmit: (data: WorkExperienceSchema["experiences"]) => void;
+  initialData: WorkExperienceSchema["experiences"];
+  onSaveDraft: () => void;
 }
 
-export function WorkExperienceForm({ onSubmit, initialData }: WorkExperienceFormProps) {
-  const form = useForm<{ experiences: WorkExperienceSchema[] }>({
+export function WorkExperienceForm({
+  onSubmit,
+  initialData,
+}: WorkExperienceFormProps) {
+  const form = useForm<WorkExperienceSchema>({
     resolver: zodResolver(workExperienceSchema),
     defaultValues: {
-      experiences: initialData.length > 0 ? initialData : [
-        {
-          company: "",
-          position: "",
-          startDate: new Date(),
-          endDate: addDays(new Date(), 365),
-          current: false,
-          duties: [""],
-          reasonForLeaving: "",
-        },
-      ],
+      experiences:
+        initialData.length > 0
+          ? initialData
+          : [
+              {
+                company: "",
+                position: "",
+                startDate: new Date(),
+                endDate: addDays(new Date(), 365),
+                current: false,
+                duties: [""],
+                reasonForLeaving: "",
+              },
+            ],
     },
   });
 
@@ -59,21 +67,22 @@ export function WorkExperienceForm({ onSubmit, initialData }: WorkExperienceForm
     name: "experiences",
   });
 
-  const handleDateRangeChange = (
-    dateRange: DateRange | undefined,
-    index: number,
-  ) => {
-    if (dateRange?.from) {
-      form.setValue(`experiences.${index}.startDate`, dateRange.from);
-    }
-    if (dateRange?.to) {
-      form.setValue(`experiences.${index}.endDate`, dateRange.to);
-    }
-  };
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => onSubmit(data.experiences))}>
+      <form
+        onSubmit={form.handleSubmit(
+          (data) => {
+            console.log("Form data:", data);
+            onSubmit(data.experiences);
+          },
+          (errors) => {
+            console.log("Form errors:", errors);
+            toast.error("Please fill in all required fields", {
+              description: <FormErrors errors={errors} />,
+            });
+          },
+        )}
+      >
         <div className="space-y-4">
           {fields.map((field, index) => (
             <Card key={field.id}>
@@ -115,64 +124,198 @@ export function WorkExperienceForm({ onSubmit, initialData }: WorkExperienceForm
                         control={form.control}
                         name={`experiences.${index}.endDate`}
                         render={({ field: endDateField }) => (
-                          <FormItem>
+                          <FormItem className="col-span-2 space-y-4">
                             <FormLabel>Employment Period</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    className="w-full justify-start text-left font-normal"
-                                  >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {startDateField.value ? (
-                                      endDateField.value ? (
+                            <div className="grid grid-cols-3">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      className="w-full justify-start text-left font-normal"
+                                    >
+                                      <CalendarIcon className="mr-2 h-4 w-4" />
+                                      {startDateField.value ? (
                                         <>
                                           {format(
                                             startDateField.value,
-                                            "LLL dd, y",
-                                          )}{" "}
-                                          -{" "}
-                                          {format(
-                                            endDateField.value,
-                                            "LLL dd, y",
+                                            "LLL yyyy",
                                           )}
+                                          {endDateField.value &&
+                                            !form.watch(
+                                              `experiences.${index}.current`,
+                                            ) && (
+                                              <>
+                                                {" "}
+                                                -{" "}
+                                                {format(
+                                                  endDateField.value,
+                                                  "LLL yyyy",
+                                                )}
+                                              </>
+                                            )}
+                                          {form.watch(
+                                            `experiences.${index}.current`,
+                                          ) && " - Present"}
                                         </>
                                       ) : (
-                                        format(
-                                          startDateField.value,
-                                          "LLL dd, y",
-                                        )
-                                      )
-                                    ) : (
-                                      <span>Pick a date range</span>
-                                    )}
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-auto p-0"
-                                align="start"
-                              >
-                                <Calendar
-                                  initialFocus
-                                  mode="range"
-                                  defaultMonth={startDateField.value}
-                                  selected={
-                                    startDateField.value
-                                      ? {
-                                          from: startDateField.value,
-                                          to: endDateField.value || undefined,
+                                        <span>Select employment period</span>
+                                      )}
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-auto p-0"
+                                  align="start"
+                                >
+                                  <div className="border-b p-3">
+                                    <div className="space-y-2">
+                                      <div className="grid gap-2">
+                                        <div className="flex items-center space-x-2">
+                                          <FormLabel className="text-xs">
+                                            Start Date
+                                          </FormLabel>
+                                          <select
+                                            className="h-8 w-[100px] rounded-md border border-input px-2 text-sm"
+                                            value={startDateField.value?.getFullYear()}
+                                            onChange={(e) => {
+                                              const newDate = new Date(
+                                                startDateField.value ||
+                                                  new Date(),
+                                              );
+                                              newDate.setFullYear(
+                                                parseInt(e.target.value),
+                                              );
+                                              startDateField.onChange(newDate);
+                                            }}
+                                          >
+                                            {Array.from(
+                                              { length: 50 },
+                                              (_, i) => (
+                                                <option
+                                                  key={i}
+                                                  value={
+                                                    new Date().getFullYear() - i
+                                                  }
+                                                >
+                                                  {new Date().getFullYear() - i}
+                                                </option>
+                                              ),
+                                            )}
+                                          </select>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <Calendar
+                                    mode="single"
+                                    selected={startDateField.value}
+                                    onSelect={(date) => {
+                                      if (date) {
+                                        startDateField.onChange(date);
+                                      }
+                                    }}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+
+                              <FormField
+                                control={form.control}
+                                name={`experiences.${index}.current`}
+                                render={({ field }) => (
+                                  <div className="flex items-center justify-center space-x-2">
+                                    <Checkbox
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                      id={`current-${index}`}
+                                    />
+                                    <label
+                                      htmlFor={`current-${index}`}
+                                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                    >
+                                      Currently work here
+                                    </label>
+                                  </div>
+                                )}
+                              />
+
+                              {!form.watch(`experiences.${index}.current`) && (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant="outline"
+                                        className="w-full justify-start text-left font-normal"
+                                      >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {endDateField.value ? (
+                                          format(endDateField.value, "LLL yyyy")
+                                        ) : (
+                                          <span>Select end date</span>
+                                        )}
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-auto p-0"
+                                    align="start"
+                                  >
+                                    <div className="border-b p-3">
+                                      <div className="space-y-2">
+                                        <div className="grid gap-2">
+                                          <div className="flex items-center space-x-2">
+                                            <FormLabel className="text-xs">
+                                              End Date
+                                            </FormLabel>
+                                            <select
+                                              className="h-8 w-[100px] rounded-md border border-input px-2 text-sm"
+                                              value={endDateField.value?.getFullYear()}
+                                              onChange={(e) => {
+                                                const newDate = new Date(
+                                                  endDateField.value ||
+                                                    new Date(),
+                                                );
+                                                newDate.setFullYear(
+                                                  parseInt(e.target.value),
+                                                );
+                                                endDateField.onChange(newDate);
+                                              }}
+                                            >
+                                              {Array.from(
+                                                { length: 50 },
+                                                (_, i) => (
+                                                  <option
+                                                    key={i}
+                                                    value={
+                                                      new Date().getFullYear() -
+                                                      i
+                                                    }
+                                                  >
+                                                    {new Date().getFullYear() -
+                                                      i}
+                                                  </option>
+                                                ),
+                                              )}
+                                            </select>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <Calendar
+                                      mode="single"
+                                      selected={endDateField.value}
+                                      onSelect={(date) => {
+                                        if (date) {
+                                          endDateField.onChange(date);
                                         }
-                                      : undefined
-                                  }
-                                  onSelect={(dateRange) =>
-                                    handleDateRangeChange(dateRange, index)
-                                  }
-                                  numberOfMonths={2}
-                                />
-                              </PopoverContent>
-                            </Popover>
+                                      }}
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              )}
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -251,18 +394,7 @@ export function WorkExperienceForm({ onSubmit, initialData }: WorkExperienceForm
             Add Another Experience
           </Button>
 
-          <Button
-            onClick={() => {
-              if (!form.formState.isValid) {
-                console.log(form.formState.errors);
-                toast.error("Please fill in all required fields", {
-                  description: <FormErrors errors={form.formState.errors} />,
-                });
-              }
-            }}
-            type="submit"
-            className="w-full"
-          >
+          <Button type="submit" className="w-full">
             Save & Continue
           </Button>
         </div>

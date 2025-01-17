@@ -2,15 +2,15 @@ import { Button } from "@/components/ui/button";
 import { CVCard } from "@/components/dashboard/cv-card";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { type CV } from "@/types/cv";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCVs } from "@/lib/cv";
-
+export type DashboardCV = Awaited<ReturnType<typeof getCVs>>[number];
 // Temporary mock data until we have a database
-const mockCVs: CV[] = [
+const mockCVs: DashboardCV[] = [
   {
     id: "1",
-    title: "Senior Frontend Developer CV",
+    jobTitle: "Senior Frontend Developer",
     createdAt: new Date("2024-03-19"),
     createdBy: {
       name: "John Doe",
@@ -18,78 +18,83 @@ const mockCVs: CV[] = [
     },
     isAiAssisted: true,
     status: "completed",
-    executiveSummary:
-      "Senior Frontend Developer with 8+ years of experience building scalable web applications...",
-    personalInfo: {
-      firstName: "John",
-      lastName: "Doe",
-      email: "john@example.com",
-      phone: "1234567890",
-      profession: "Frontend Developer",
-      location: "London, UK",
-      gender: "male",
-      availability: "2 weeks notice",
-      nationality: "British",
-      currentSalary: 85000,
-      expectedSalary: 95000,
-      driversLicense: true,
-      idNumber: "AB123456C",
-    },
-    workHistory: [
-      {
-        company: "Tech Corp",
-        position: "Senior Frontend Developer",
-        startDate: new Date("2020-01-01"),
-        endDate: null,
-        current: true,
-        duties: [
-          "Lead a team of 5 frontend developers",
-          "Architect and implement scalable React applications",
-          "Mentor junior developers",
-          "Implement CI/CD pipelines",
+    formData: {
+      executiveSummary:
+        "Senior Frontend Developer with 8+ years of experience building scalable web applications...",
+      personalInfo: {
+        firstName: "John",
+        lastName: "Doe",
+        email: "john@example.com",
+        phone: "1234567890",
+        profession: "Frontend Developer",
+        location: "London, UK",
+        gender: "male",
+        availability: "2 weeks notice",
+        nationality: "British",
+        currentSalary: 85000,
+        expectedSalary: 95000,
+        driversLicense: true,
+        idNumber: "AB123456C",
+      },
+      workHistory: {
+        experiences: [
+          {
+            company: "Tech Corp",
+            position: "Senior Frontend Developer",
+            startDate: new Date("2020-01-01"),
+            endDate: undefined,
+            current: true,
+            duties: [
+              "Lead a team of 5 frontend developers",
+              "Architect and implement scalable React applications",
+              "Mentor junior developers",
+              "Implement CI/CD pipelines",
+            ],
+            reasonForLeaving: "Seeking new challenges",
+          },
         ],
-        reasonForLeaving: "Seeking new challenges",
       },
-    ],
-    education: [
-      {
-        institution: "University of Technology",
-        qualification: "BSc Computer Science",
-        completionDate: new Date("2016-06-15").getFullYear(),
-        completed: true,
+      education: {
+        educations: [
+          {
+            institution: "University of Technology",
+            qualification: "BSc Computer Science",
+            completionDate: new Date("2016-06-15").getFullYear(),
+            completed: true,
+          },
+        ],
       },
-    ],
-    skills: {
-      computerSkills: [
-        "React",
-        "TypeScript",
-        "Next.js",
-        "TailwindCSS",
-        "GraphQL",
-        "Jest",
-        "CI/CD",
-      ],
-      otherSkills: ["Team Leadership", "Mentoring", "Agile Methodologies"],
-      skillsMatrix: [
-        {
-          skill: "React",
-          yearsExperience: 8,
-          proficiency: "Expert",
-          lastUsed: 2024,
-        },
-        {
-          skill: "TypeScript",
-          yearsExperience: 6,
-          proficiency: "Expert",
-          lastUsed: 2024,
-        },
-        // Add more skill matrix entries as needed
-      ],
+      skills: {
+        computerSkills: [
+          "React",
+          "TypeScript",
+          "Next.js",
+          "TailwindCSS",
+          "GraphQL",
+          "Jest",
+          "CI/CD",
+        ],
+        otherSkills: ["Team Leadership", "Mentoring", "Agile Methodologies"],
+        skillsMatrix: [
+          {
+            skill: "React",
+            yearsExperience: 8,
+            proficiency: "Expert",
+            lastUsed: 2024,
+          },
+          {
+            skill: "TypeScript",
+            yearsExperience: 6,
+            proficiency: "Expert",
+            lastUsed: 2024,
+          },
+        ],
+      },
     },
   },
   {
     id: "2",
-    title: "Product Manager Application",
+    jobTitle: "Product Manager",
     createdAt: new Date("2024-03-15"),
     createdBy: {
       name: "Jane Smith",
@@ -97,69 +102,75 @@ const mockCVs: CV[] = [
     },
     isAiAssisted: false,
     status: "draft",
-    executiveSummary:
-      "Product manager with 5+ years experience in agile environments...",
-    personalInfo: {
-      firstName: "Jane",
-      lastName: "Smith",
-      email: "jane@example.com",
-      phone: "0987654321",
-      profession: "Product Manager",
-      location: "Manchester, UK",
-      gender: "female",
-      availability: "Immediate",
-      nationality: "British",
-      currentSalary: 70000,
-      expectedSalary: 85000,
-      driversLicense: true,
-      idNumber: "XY789101Z",
-    },
-    workHistory: [
-      {
-        company: "Product House",
-        position: "Product Manager",
-        startDate: new Date("2021-03-01"),
-        endDate: null,
-        current: true,
-        duties: ["Product strategy", "Stakeholder management"],
-        reasonForLeaving: "Company restructuring",
+    formData: {
+      executiveSummary:
+        "Product manager with 5+ years experience in agile environments...",
+      personalInfo: {
+        firstName: "Jane",
+        lastName: "Smith",
+        email: "jane@example.com",
+        phone: "0987654321",
+        profession: "Product Manager",
+        location: "Manchester, UK",
+        gender: "female",
+        availability: "Immediate",
+        nationality: "British",
+        currentSalary: 70000,
+        expectedSalary: 85000,
+        driversLicense: true,
+        idNumber: "XY789101Z",
       },
-    ],
-    education: [
-      {
-        institution: "Business School",
-        qualification: "MBA",
-        completionDate: new Date("2020-06-15").getFullYear(),
-        completed: true,
+      workHistory: {
+        experiences: [
+          {
+            company: "Product House",
+            position: "Product Manager",
+            startDate: new Date("2021-03-01"),
+            endDate: new Date("2023-06-30"),
+            current: false,
+            duties: ["Product strategy", "Stakeholder management"],
+            reasonForLeaving: "Company restructuring",
+          },
+        ],
       },
-    ],
-    skills: {
-      computerSkills: [
-        "JIRA",
-        "Confluence",
-        "Excel",
-        "Product Analytics Tools",
-      ],
-      otherSkills: [
-        "Product Strategy",
-        "Agile",
-        "User Research",
-        "Data Analysis",
-      ],
-      skillsMatrix: [
-        {
-          skill: "Product Management",
-          yearsExperience: 5,
-          proficiency: "Advanced",
-          lastUsed: 2024,
-        },
-        // Add more skill matrix entries as needed
-      ],
+      education: {
+        educations: [
+          {
+            institution: "Business School",
+            qualification: "MBA",
+            completionDate: new Date("2020-06-15").getFullYear(),
+            completed: true,
+          },
+        ],
+      },
+      skills: {
+        computerSkills: [
+          "JIRA",
+          "Confluence",
+          "Excel",
+          "Product Analytics Tools",
+        ],
+        otherSkills: [
+          "Product Strategy",
+          "Agile",
+          "User Research",
+          "Data Analysis",
+        ],
+        skillsMatrix: [
+          {
+            skill: "Product Management",
+            yearsExperience: 5,
+            proficiency: "Advanced",
+            lastUsed: 2024,
+          },
+          // Add more skill matrix entries as needed
+        ],
+      },
     },
   },
   {
     id: "3",
-    title: "UX Designer Portfolio",
+    jobTitle: "UX Designer",
     createdAt: new Date("2024-03-10"),
     createdBy: {
       name: "Sarah Wilson",
@@ -167,51 +178,57 @@ const mockCVs: CV[] = [
     },
     isAiAssisted: true,
     status: "completed",
-    executiveSummary:
-      "Creative UX Designer with a passion for user-centered design...",
-    personalInfo: {
-      firstName: "Sarah",
-      lastName: "Wilson",
-      email: "sarah@example.com",
-      phone: "0123456789",
-      profession: "UX Designer",
-      location: "Bristol, UK",
-      gender: "female",
-      availability: "1 month notice",
-      nationality: "British",
-      currentSalary: 55000,
-      expectedSalary: 65000,
-      driversLicense: false,
-      idNumber: "PQ987654R",
-    },
-    workHistory: [
-      {
-        company: "Design Studio",
-        position: "UX Designer",
-        startDate: new Date("2022-01-01"),
-        endDate: null,
-        current: true,
-        duties: ["User research", "Wireframing", "Prototyping"],
-        reasonForLeaving: "Career growth",
+    formData: {
+      executiveSummary:
+        "Creative UX Designer with a passion for user-centered design...",
+      personalInfo: {
+        firstName: "Sarah",
+        lastName: "Wilson",
+        email: "sarah@example.com",
+        phone: "0123456789",
+        profession: "UX Designer",
+        location: "Bristol, UK",
+        gender: "female",
+        availability: "1 month notice",
+        nationality: "British",
+        currentSalary: 55000,
+        expectedSalary: 65000,
+        driversLicense: false,
+        idNumber: "PQ987654R",
       },
-    ],
-    education: [
-      {
-        institution: "Design Institute",
-        qualification: "BA Design",
-        completionDate: new Date("2021-06-15").getFullYear(),
-        completed: true,
+      workHistory: {
+        experiences: [
+          {
+            company: "Design Studio",
+            position: "UX Designer",
+            startDate: new Date("2022-01-01"),
+            endDate: undefined,
+            current: true,
+            duties: ["User research", "Wireframing", "Prototyping"],
+            reasonForLeaving: "Career growth",
+          },
+        ],
       },
-    ],
-    skills: {
-      computerSkills: ["Figma", "User Research", "Prototyping", "UI Design"],
-      otherSkills: [],
-      skillsMatrix: [],
+      education: {
+        educations: [
+          {
+            institution: "Design Institute",
+            qualification: "BA Design",
+            completionDate: new Date("2021-06-15").getFullYear(),
+            completed: true,
+          },
+        ],
+      },
+      skills: {
+        computerSkills: ["Figma", "User Research", "Prototyping", "UI Design"],
+        otherSkills: [],
+        skillsMatrix: [],
+      },
     },
   },
   {
     id: "4",
-    title: "Backend Developer CV",
+    jobTitle: "Backend Developer",
     createdAt: new Date("2024-03-05"),
     createdBy: {
       name: "Mike Johnson",
@@ -219,45 +236,52 @@ const mockCVs: CV[] = [
     },
     isAiAssisted: false,
     status: "completed",
-    executiveSummary: "Backend developer specializing in Node.js and Python...",
-    personalInfo: {
-      firstName: "Mike",
-      lastName: "Johnson",
-      email: "mike@example.com",
-      phone: "0987654321",
-      profession: "Backend Developer",
-      location: "Edinburgh, UK",
-      gender: "male",
-      availability: "3 months notice",
-      nationality: "British",
-      currentSalary: 65000,
-      expectedSalary: 75000,
-      driversLicense: true,
-      idNumber: "CD654321E",
-    },
-    workHistory: [
-      {
-        company: "Tech Solutions",
-        position: "Backend Developer",
-        startDate: new Date("2021-06-01"),
-        endDate: null,
-        current: true,
-        duties: ["API development", "Database optimization"],
-        reasonForLeaving: "Seeking remote opportunities",
+    formData: {
+      executiveSummary:
+        "Backend developer specializing in Node.js and Python...",
+      personalInfo: {
+        firstName: "Mike",
+        lastName: "Johnson",
+        email: "mike@example.com",
+        phone: "0987654321",
+        profession: "Backend Developer",
+        location: "Edinburgh, UK",
+        gender: "male",
+        availability: "3 months notice",
+        nationality: "British",
+        currentSalary: 65000,
+        expectedSalary: 75000,
+        driversLicense: true,
+        idNumber: "CD654321E",
       },
-    ],
-    education: [
-      {
-        institution: "Tech University",
-        qualification: "MSc Software Engineering",
-        completionDate: new Date("2021-05-15").getFullYear(),
-        completed: true,
+      workHistory: {
+        experiences: [
+          {
+            company: "Tech Solutions",
+            position: "Backend Developer",
+            startDate: new Date("2021-06-01"),
+            endDate: undefined,
+            current: true,
+            duties: ["API development", "Database optimization"],
+            reasonForLeaving: "Seeking remote opportunities",
+          },
+        ],
       },
-    ],
-    skills: {
-      computerSkills: ["Node.js", "Python", "PostgreSQL", "Docker"],
-      otherSkills: [],
-      skillsMatrix: [],
+      education: {
+        educations: [
+          {
+            institution: "Tech University",
+            qualification: "MSc Software Engineering",
+            completionDate: new Date("2021-05-15").getFullYear(),
+            completed: true,
+          },
+        ],
+      },
+      skills: {
+        computerSkills: ["Node.js", "Python", "PostgreSQL", "Docker"],
+        otherSkills: [],
+        skillsMatrix: [],
+      },
     },
   },
 ];
@@ -300,14 +324,14 @@ export default async function Dashboard() {
               <div className="space-y-4">
                 <h3 className="font-semibold">Executive Summary</h3>
                 <p className="text-sm text-muted-foreground">
-                  {mostRecent.executiveSummary}
+                  {mostRecent.formData.executiveSummary}
                 </p>
                 <div>
                   <h3 className="mb-2 font-semibold">Key Skills</h3>
                   <div className="flex flex-wrap gap-2">
                     {[
-                      ...mostRecent.skills.computerSkills,
-                      ...mostRecent.skills.otherSkills,
+                      ...mostRecent.formData.skills.computerSkills,
+                      ...mostRecent.formData.skills.otherSkills,
                     ].map((skill) => (
                       <span
                         key={skill}

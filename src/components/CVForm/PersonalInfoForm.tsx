@@ -13,17 +13,27 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
-import { Select, SelectContent, SelectTrigger, SelectItem, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectTrigger,
+  SelectItem,
+  SelectValue,
+} from "../ui/select";
 
 interface PersonalInfoFormProps {
   onSubmit: (data: PersonalInfoSchema) => void;
   initialData: PersonalInfoSchema;
+  onSaveDraft: () => void;
 }
 
-export function PersonalInfoForm({ onSubmit, initialData }: PersonalInfoFormProps) {
+export function PersonalInfoForm({
+  onSubmit,
+  initialData,
+}: PersonalInfoFormProps) {
   const form = useForm<PersonalInfoSchema>({
     resolver: zodResolver(personalInfoSchema),
-    defaultValues: initialData
+    defaultValues: initialData,
   });
 
   return (
@@ -123,7 +133,10 @@ export function PersonalInfoForm({ onSubmit, initialData }: PersonalInfoFormProp
             <FormItem>
               <FormLabel>Gender</FormLabel>
               <FormControl>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
@@ -235,7 +248,9 @@ export function PersonalInfoForm({ onSubmit, initialData }: PersonalInfoFormProp
             </FormItem>
           )}
         />
-        <Button type="submit" className="col-span-2">Submit</Button>
+        <Button type="submit" className="col-span-2">
+          Submit
+        </Button>
       </form>
     </Form>
   );

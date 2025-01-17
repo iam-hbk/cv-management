@@ -35,6 +35,7 @@ const currentYear = new Date().getFullYear();
 interface SkillsFormProps {
   onSubmit: (data: SkillsSchema) => void;
   initialData: SkillsSchema;
+  onSaveDraft: () => void;
 }
 
 export function SkillsForm({ onSubmit, initialData }: SkillsFormProps) {

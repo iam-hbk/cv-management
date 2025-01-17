@@ -1,25 +1,33 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Brain, FileEdit } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { type CV } from "@/types/cv";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { DashboardCV } from "@/app/dashboard/page";
 
-export function CVCard({ cv }: { cv: CV }) {
+export function CVCard({ cv }: { cv: DashboardCV }) {
   // Get the first 3 skills combining computer and other skills
-  const displaySkills = [...cv.skills.computerSkills, ...cv.skills.otherSkills]
-    .slice(0, 3);
+  const displaySkills = [
+    ...(cv.formData?.skills.computerSkills ?? []),
+    ...(cv.formData?.skills.otherSkills ?? []),
+  ].slice(0, 3);
 
   return (
     <Link href={`/dashboard/cv/${cv.id}`}>
-      <Card className="hover:bg-muted/50 transition-colors">
+      <Card className="transition-colors hover:bg-muted/50">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="line-clamp-1">{cv.title}</CardTitle>
+            <CardTitle className="line-clamp-1">{cv.jobTitle}</CardTitle>
             <div className="flex items-center gap-2">
-              <Badge 
+              <Badge
                 variant={cv.status === "completed" ? "default" : "secondary"}
-                className="text-xs border-primary"
+                className="border-primary text-xs"
               >
                 {cv.status}
               </Badge>
@@ -33,15 +41,17 @@ export function CVCard({ cv }: { cv: CV }) {
           <CardDescription className="flex flex-col gap-1">
             <span>By {cv.createdBy.name}</span>
             <span className="text-xs">
-              Created {formatDistanceToNow(cv.createdAt, { addSuffix: true })}
+              Created{" "}
+              {formatDistanceToNow(cv.createdAt ?? new Date(), {
+                addSuffix: true,
+              })}
             </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{cv.personalInfo.profession}</span>
-            •
-            <span>{cv.personalInfo.location}</span>
+            <span>{cv.formData?.personalInfo.profession}</span>•
+            <span>{cv.formData?.personalInfo.location}</span>
           </div>
           <div className="flex flex-wrap gap-1">
             {displaySkills.map((skill) => (
@@ -52,9 +62,15 @@ export function CVCard({ cv }: { cv: CV }) {
                 {skill}
               </span>
             ))}
-            {(cv.skills.computerSkills.length + cv.skills.otherSkills.length) > 3 && (
+            {cv.formData?.skills.computerSkills.length +
+              cv.formData?.skills.otherSkills.length >
+              3 && (
               <span className="text-xs text-muted-foreground">
-                +{(cv.skills.computerSkills.length + cv.skills.otherSkills.length) - 3} more
+                +
+                {cv.formData?.skills.computerSkills.length +
+                  cv.formData?.skills.otherSkills.length -
+                  3}{" "}
+                more
               </span>
             )}
           </div>
@@ -62,4 +78,4 @@ export function CVCard({ cv }: { cv: CV }) {
       </Card>
     </Link>
   );
-} 
+}
