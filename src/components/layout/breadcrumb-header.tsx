@@ -13,15 +13,13 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NavUser } from "./nav-user";
 
-
 export function BreadcrumbHeader() {
   const pathname = usePathname();
   const paths = pathname.split("/").filter(Boolean);
 
-
   return (
-    <header className="m-2 flex h-16 flex-row items-center gap-2 rounded-lg border px-2">
-      <div className="flex items-center gap-2 px-4 flex-1">
+    <header className="m-2 flex h-16 flex-row items-center gap-2 rounded-lg border px-2 print:hidden">
+      <div className="flex flex-1 items-center gap-2 px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>

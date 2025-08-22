@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { cvs } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 export async function getCVs() {
   const dbCVs = await db.query.cvs.findMany({
@@ -34,4 +34,39 @@ export async function getCVs() {
       formData: cv.formData,
     };
   });
+}
+
+export async function getCVById(id: string) {
+  const dbCV = await db.query.cvs.findFirst({
+    where: eq(cvs.id, id),
+    with: {
+      user: {
+        columns: {
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!dbCV) {
+    return null;
+  }
+
+  if (!dbCV.formData) {
+    throw new Error(`CV ${dbCV.id} has no form data`);
+  }
+
+  return {
+    id: dbCV.id,
+    jobTitle: dbCV.jobTitle,
+    createdAt: dbCV.createdAt ?? new Date(),
+    createdBy: {
+      name: dbCV.user?.name ?? dbCV.user?.email ?? "unknown",
+      email: dbCV.user?.email ?? "unknown@example.com",
+    },
+    isAiAssisted: dbCV.isAiAssisted, // If we have AI data, it was AI assisted
+    status: dbCV.status,
+    formData: dbCV.formData,
+  };
 }

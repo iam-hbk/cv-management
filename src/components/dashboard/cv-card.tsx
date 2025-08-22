@@ -19,7 +19,7 @@ export function CVCard({ cv }: { cv: DashboardCV }) {
   ].slice(0, 3);
 
   return (
-    <Link href={`/dashboard/cv/${cv.id}`}>
+    <Link href={`/dashboard/curriculum-vitae/view/${cv.id}`}>
       <Card className="transition-colors hover:bg-muted/50">
         <CardHeader>
           <div className="flex items-center justify-between">
