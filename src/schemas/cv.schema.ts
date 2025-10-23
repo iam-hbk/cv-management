@@ -16,19 +16,18 @@ export const executiveSummarySchema = z.object({
 export const personalInfoSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
+  email: z.email("Invalid email address"),
   phone: z.string().min(1, "Phone number is required"),
   profession: z.string().min(1, "Profession is required"),
   location: z.string().min(1, "Location is required"),
   gender: z.enum(["male", "female", "other"], {
-    required_error: "Gender is required",
-    invalid_type_error: "Please select male, female or other",
-  }),
+      error: (issue) => issue.input === undefined ? "Gender is required" : "Please select male, female or other"
+}),
   availability: z.string().min(1, "Availability is required"),
   nationality: z.string().min(1, "Nationality is required"),
   currentSalary: z.number().min(0, "Salary must be positive"),
   expectedSalary: z.number().min(0, "Expected salary must be positive"),
-  driversLicense: z.boolean().default(false),
+  driversLicense: z.boolean().prefault(false),
   idNumber: z.string().min(1, "ID Number is required"),
 });
 

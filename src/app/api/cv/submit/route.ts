@@ -7,7 +7,6 @@ import type { CVFormData } from "@/schemas/cv.schema";
 export async function POST(request: Request) {
   try {
     const session = await auth();
-
     if (!session?.user?.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }

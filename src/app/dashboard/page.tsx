@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { CVCard } from "@/components/dashboard/cv-card";
-import { Plus } from "lucide-react";
+import { Brain, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -303,12 +303,22 @@ export default async function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Recent CVs</h1>
+        <div className="flex items-center gap-2">
+          
         <Link href="/dashboard/curriculum-vitae/new">
-          <Button>
+          
+          <Button variant="outline">
             <Plus className="mr-2 h-4 w-4" />
             Create New CV
           </Button>
         </Link>
+        <Link href="/dashboard/curriculum-vitae/new/ai-extract">
+          <Button>
+            <Brain className="mr-2 h-4 w-4" />
+            AI-Extract
+          </Button>
+        </Link>
+        </div>
       </div>
 
       {mostRecent && (

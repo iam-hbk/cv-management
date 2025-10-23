@@ -11,7 +11,7 @@ import {
 import type { CVFormData } from "@/schemas/cv.schema";
 import type { AdapterAccountType } from "next-auth/adapters";
 import { relations } from "drizzle-orm";
-
+import { createInsertSchema } from "drizzle-zod";
 // Users table with next-auth fields
 export const users = pgTable("users", {
   id: text("id")
@@ -101,7 +101,7 @@ export const cvs = pgTable("cvs", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  userId: text("user_id")
+  userId: text("user_id") // TODO: rename to createdBy
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   status: varchar("status", { length: 50 })
@@ -130,3 +130,7 @@ export type NewUser = typeof users.$inferInsert;
 export type CV = typeof cvs.$inferSelect;
 export type NewCV = typeof cvs.$inferInsert;
 export type DraftCV = Omit<NewCV, "userId" | "status">;
+export type insertCV = typeof cvs.$inferInsert;
+// zod schema for insertCV
+export const insertCVSchema = createInsertSchema(cvs);
+
