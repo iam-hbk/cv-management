@@ -1,143 +1,89 @@
-import { NextResponse } from "next/server";
-import { generateObject } from "ai";
+
 import { google } from "@ai-sdk/google";
-import { z } from "zod";
-import { db } from "@/db";
-import { cvs } from "@/db/schema";
-import { auth } from "@/lib/auth";
-import type { CVFormData } from "@/schemas/cv.schema";
-import { CV_EXTRACTION_PROMPT } from "@/lib/utils";
+import { generateObject } from "ai";
+import { cvSchema } from "@/schemas/cv.schema";
+import { NextRequest, NextResponse } from "next/server";
 
-// AI response schema based on CVFormData
-const aiResponseSchema = z.object({
-  isValidCV: z.boolean().describe("Whether this is a valid CV"),
-  validationMessage: z.string().describe("Reason if CV is invalid"),
-  status: z.enum(["draft", "completed"]).describe("CV status"),
-  jobTitle: z.string().describe("Main job title from the CV"),
-  formData: z.custom<CVFormData>(),
-});
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const session = await auth();
-    const file = formData.get("cv") as File;
-
-    const userId = session?.user?.id;
-
-    console.log("userId", userId);
-    console.log("file", file);
-
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "User not authenticated" },
-        { status: 401 },
-      );
-    }
+    const file = formData.get("pdf") as File;
 
     if (!file) {
       return NextResponse.json(
-        { error: "A CV file is required" },
-        { status: 400 },
+        { error: "No file provided" },
+        { status: 400 }
       );
     }
 
-    // Check file type
+    // Validate file type
     const allowedTypes = [
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "text/plain",
     ];
+
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: "Only PDF, DOC, DOCX, and TXT files are supported" },
-        { status: 400 },
+        { error: "Invalid file type. Please upload a PDF, DOC, DOCX, or TXT file" },
+        { status: 400 }
       );
     }
 
-    // Check file size (limit to 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: "File size exceeds 10MB limit" },
-        { status: 400 },
-      );
-    }
+    // Convert the file's arrayBuffer to a Base64 data URL
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const charArray = Array.from(uint8Array, (byte) => String.fromCharCode(byte));
+    const binaryString = charArray.join("");
+    const base64Data = btoa(binaryString);
+    const fileDataUrl = `data:application/pdf;base64,${base64Data}`;
 
-    // Extract CV data with AI using structured output
     const result = await generateObject({
-      model: google("gemini-2.5-flash-lite"),
-      schema: aiResponseSchema,
+      model: google("gemini-2.0-flash"),
       messages: [
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: CV_EXTRACTION_PROMPT,
+              text: `Analyze the following CV/Resume and extract all the details. 
+              Return the data in the following structure:
+              - executiveSummary: A brief professional summary (at least 50 characters)
+              - jobTitle: The person's current or target job title (max 21 characters)
+              - personalInfo: firstName, lastName, email, phone, profession, location, gender, availability, nationality, currentSalary, expectedSalary, driversLicense, idNumber
+              - workHistory: Array of experiences with company, position, startDate, endDate, current, duties array, reasonForLeaving
+              - education: Array of educations with institution, qualification, completionDate (as number/year), completed (boolean)
+              - skills: computerSkills array, otherSkills array, skillsMatrix array with skill, yearsExperience, proficiency, lastUsed
+              
+              For dates, use string format. For salary and numeric fields, use numbers.
+              If information is not available, use reasonable defaults or empty arrays.`,
             },
             {
               type: "file",
-              data: await file.arrayBuffer(),
-              mediaType: file.type,
+              data: fileDataUrl,
+              mediaType: "application/pdf",
             },
           ],
         },
       ],
-      maxRetries: 2,
+      schema: cvSchema,
     });
-    console.log("PROMPT", CV_EXTRACTION_PROMPT);
 
-    const parsedData = result.object;
-
-    // Check if CV is valid
-    if (!parsedData.isValidCV) {
-      return NextResponse.json(
-        {
-          error: "Invalid CV",
-          reason: parsedData.validationMessage,
-        },
-        { status: 400 },
-      );
-    }
-
-    // Create CV record in database
-    const cvData = {
-      userId,
-      status: parsedData.status,
-      jobTitle: parsedData.jobTitle,
-      formData: parsedData.formData,
-      isAiAssisted: true,
-    };
-
-    const [cv] = await db.insert(cvs).values(cvData).returning();
+    console.log("result\n\n", result);
 
     return NextResponse.json({
       success: true,
-      cvId: cv.id,
-      extractedData: parsedData,
+      data: result.object,
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Error processing CV:", error);
-
-    let errorMessage = "Failed to process CV";
-    const statusCode = 500;
-
-    if (error instanceof Error && error.message?.includes("API key")) {
-      errorMessage = "AI service configuration error";
-    } else if (error instanceof Error && error.message?.includes("timeout")) {
-      errorMessage = "Processing timeout";
-    } else if (error instanceof Error && error.message?.includes("schema")) {
-      errorMessage = "Data extraction error";
-    }
-
-    return NextResponse.json({ error: errorMessage }, { status: statusCode });
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to process CV",
+      },
+      { status: 500 }
+    );
   }
 }
-
-// export const config = {
-//   api: {
-//     bodyParser: false,
-//   },
-// };

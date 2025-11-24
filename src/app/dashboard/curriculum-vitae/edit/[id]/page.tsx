@@ -1,9 +1,8 @@
 "use client";
 
 import { useAtom, useSetAtom } from "jotai";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { PersonalInfoForm } from "@/components/CVForm/PersonalInfoForm";
 import { WorkExperienceForm } from "@/components/CVForm/WorkExperienceForm";
 import { EducationForm } from "@/components/CVForm/EducationForm";
@@ -32,20 +31,22 @@ import type {
 import { cn } from "@/lib/utils";
 import { useSubmitCVMutation } from "@/queries/cv";
 import { ExecutiveSummaryForm } from "@/components/CVForm/ExecutiveSummary";
-import { Loader } from "lucide-react";
+import { ChevronDown, Loader } from "lucide-react";
 // import { DraftCV } from "@/db/schema";
 import { useCV } from "@/hooks/use-cv";
 import { use, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+
 interface EditCVPageProps {
   params: Promise<{
-    cvId: string;
+    id: string;
   }>;
 }
 export default function EditCVPage({ params }: EditCVPageProps) {
   const router = useRouter();
-  const { cvId } = use(params);
+  const { id } = use(params);
 
-  const { data: cv, isLoading, error, isError } = useCV(cvId || "");
+  const { data: cv, isLoading, error, isError,refetch } = useCV(id || "");
 
   const [currentStep, setCurrentStep] = useAtom(currentStepAtom);
   const [executiveSummary, setExecutiveSummary] = useAtom(executiveSummaryAtom);
@@ -69,14 +70,14 @@ export default function EditCVPage({ params }: EditCVPageProps) {
       });
       setPersonalInfo(cv.formData.personalInfo);
       setWorkExperience({
-        type: "add",
+        type: "set",
         data: cv.formData.workHistory.experiences,
       });
       setEducation({
-        type: "add",
+        type: "set",
         data: cv.formData.education.educations,
       });
-      setSkills({ type: "add", data: cv.formData.skills });
+      setSkills({ type: "set", data: cv.formData.skills });
 
       // Mark all steps as completed since we have data
       updateStepCompletion("executiveSummary");
@@ -152,7 +153,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
   };
 
   const handleFinalSubmit = async () => {
-    if (!cvId) {
+    if (!id) {
       toast.error("CV ID not found");
       return;
     }
@@ -167,7 +168,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
       };
 
       // Use the API to update the CV
-      const response = await fetch(`/api/cv/${cvId}`, {
+      const response = await fetch(`/api/cv/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -185,7 +186,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 
       toast.success("CV updated successfully!");
       resetForm();
-      router.push(`/dashboard/curriculum-vitae/view/${cvId}`);
+      router.push(`/dashboard/curriculum-vitae/view/${id}`);
     } catch (error) {
       toast.error("Failed to update CV. Please try again.", {
         description: error instanceof Error ? error.message : "Unknown error",
@@ -194,7 +195,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
   };
 
   const handleSaveDraft = async () => {
-    if (!cvId) {
+    if (!id) {
       toast.error("CV ID not found");
       return;
     }
@@ -209,7 +210,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
       };
 
       // Use the API to update the CV as draft
-      const response = await fetch(`/api/cv/${cvId}`, {
+      const response = await fetch(`/api/cv/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -279,42 +280,176 @@ export default function EditCVPage({ params }: EditCVPageProps) {
       case 5:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-medium">Preview Your Updated CV</h3>
-            <div className="space-y-4">
-              <section>
-                <h4 className="mb-2 font-medium">Executive Summary</h4>
-                <pre className="overflow-auto rounded-lg bg-muted p-4 text-sm">
-                  {JSON.stringify(executiveSummary, null, 2)}
-                </pre>
-              </section>
-              <Separator />
-              <section>
-                <h4 className="mb-2 font-medium">Personal Information</h4>
-                <pre className="overflow-auto rounded-lg bg-muted p-4 text-sm">
-                  {JSON.stringify(personalInfo, null, 2)}
-                </pre>
-              </section>
-              <Separator />
-              <section>
-                <h4 className="mb-2 font-medium">Work Experience</h4>
-                <pre className="overflow-auto rounded-lg bg-muted p-4 text-sm">
-                  {JSON.stringify(workExperience, null, 2)}
-                </pre>
-              </section>
-              <Separator />
-              <section>
-                <h4 className="mb-2 font-medium">Education</h4>
-                <pre className="overflow-auto rounded-lg bg-muted p-4 text-sm">
-                  {JSON.stringify(education, null, 2)}
-                </pre>
-              </section>
-              <Separator />
-              <section>
-                <h4 className="mb-2 font-medium">Skills</h4>
-                <pre className="overflow-auto rounded-lg bg-muted p-4 text-sm">
-                  {JSON.stringify(skills, null, 2)}
-                </pre>
-              </section>
+            <h3 className="text-lg font-medium">Preview</h3>
+            <div className="space-y-6">
+              {/* Executive Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Executive Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="leading-relaxed text-gray-700">
+                    {executiveSummary.executiveSummary}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Personal Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Personal Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900">Full Name</h4>
+                        <p className="text-gray-700">{personalInfo.firstName} {personalInfo.lastName}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">Email</h4>
+                        <p className="text-gray-700">{personalInfo.email}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">Phone</h4>
+                        <p className="text-gray-700">{personalInfo.phone}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">Location</h4>
+                        <p className="text-gray-700">{personalInfo.location}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900">Profession</h4>
+                        <p className="text-gray-700">{personalInfo.profession}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">Nationality</h4>
+                        <p className="text-gray-700">{personalInfo.nationality}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">Availability</h4>
+                        <p className="text-gray-700">{personalInfo.availability}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">Driver&apos;s License</h4>
+                        <p className="text-gray-700">{personalInfo.driversLicense ? "Yes" : "No"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Work Experience */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Work Experience</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {Array.isArray(workExperience) && workExperience.map((exp: WorkExperienceSchema["experiences"][0], index: number) => (
+                      <div key={index} className="border-l-2 border-gray-200 pl-4">
+                        <div className="mb-2 flex items-center justify-between">
+                          <h4 className="font-semibold text-gray-900">{exp.position}</h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            {new Date(exp.startDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" })} - {exp.endDate ? new Date(exp.endDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "Present"}
+                            {exp.current && <Badge variant="secondary">Current</Badge>}
+                          </div>
+                        </div>
+                        <p className="mb-2 font-medium text-gray-600">{exp.company}</p>
+                        {exp.duties && exp.duties.length > 0 && (
+                          <ul className="list-inside list-disc space-y-1 text-gray-700">
+                            {exp.duties.map((duty: string, dutyIndex: number) => (
+                              <li key={dutyIndex} className="text-sm">{duty}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {!exp.current && exp.reasonForLeaving && (
+                          <p className="mt-2 text-sm italic text-gray-500">Reason for leaving: {exp.reasonForLeaving}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Education */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Education</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {Array.isArray(education) && education.map((edu: EducationSchema["educations"][0], index: number) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{edu.qualification}</h4>
+                          <p className="text-gray-600">{edu.institution}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-500">{edu.completionDate}</p>
+                          <Badge variant={edu.completed ? "default" : "secondary"}>
+                            {edu.completed ? "Completed" : "In Progress"}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Skills */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Skills</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {skills.computerSkills && skills.computerSkills.length > 0 && (
+                      <div>
+                        <h4 className="mb-3 font-medium text-gray-900">Computer Skills</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {skills.computerSkills.map((skill: string) => (
+                            <Badge key={skill} variant="outline">{skill}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {skills.otherSkills && skills.otherSkills.length > 0 && (
+                      <div>
+                        <h4 className="mb-3 font-medium text-gray-900">Other Skills</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {skills.otherSkills.map((skill: string) => (
+                            <Badge key={skill} variant="outline">{skill}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {skills.skillsMatrix && skills.skillsMatrix.length > 0 && (
+                      <div>
+                        <h4 className="mb-3 font-medium text-gray-900">Skills Matrix</h4>
+                        <div className="grid gap-4">
+                          {skills.skillsMatrix.map((skill: SkillsSchema["skillsMatrix"][0], index: number) => (
+                            <div key={index} className="rounded-lg border p-4">
+                              <div className="mb-2 flex items-center justify-between">
+                                <h5 className="font-medium text-gray-900">{skill.skill}</h5>
+                                <Badge variant="secondary">{skill.proficiency}</Badge>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                                <div>Years Experience: {skill.yearsExperience}</div>
+                                <div>Last Used: {skill.lastUsed}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         );
@@ -346,9 +481,14 @@ export default function EditCVPage({ params }: EditCVPageProps) {
             <p className="mb-4 text-red-600">
               {error?.message || "CV not found"}
             </p>
-            <Button onClick={() => router.push("/dashboard")}>
-              Back to Dashboard
-            </Button>
+            <div className="flex gap-2 justify-center items-center">
+              <Button onClick={() => refetch()}>
+                Try Again
+              </Button>
+              <Button variant={"outline"} onClick={() => router.push("/dashboard")}>
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -371,16 +511,17 @@ export default function EditCVPage({ params }: EditCVPageProps) {
             <div
               onClick={() => setCurrentStep(index)}
               key={step.id}
-              className="group flex cursor-pointer flex-col items-center gap-2"
+              className="group flex cursor-pointer flex-col items-center gap-2 relative"
             >
+              {index === currentStep && <ChevronDown className="h-5 w-5 text-primary absolute -top-5 animate-bounce" />}
               <div
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors duration-200",
                   {
                     "border-primary bg-primary text-primary-foreground":
                       index === currentStep,
-                    "border-green-500 bg-green-500 text-white":
-                      step.isCompleted,
+                    "border-green-600  text-green-600":
+                      step.isCompleted && index !== currentStep,
                     "border-destructive bg-background text-muted-foreground":
                       !step.isCompleted && index !== currentStep,
                   },
@@ -397,7 +538,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
                     "group-hover:text-primary": index === currentStep,
                     "group-hover:text-destructive":
                       !step.isCompleted && index !== currentStep,
-                    "group-hover:text-green-500": step.isCompleted,
+                    "group-hover:text-green-500": step.isCompleted && index !== currentStep,
                   },
                 )}
               >

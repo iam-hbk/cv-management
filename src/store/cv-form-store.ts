@@ -29,7 +29,7 @@ const initialSteps: Step[] = [
   { id: "work", title: "Work Experience", isCompleted: false },
   { id: "education", title: "Education", isCompleted: false },
   { id: "skills", title: "Skills & Competencies", isCompleted: false },
-  { id: "preview", title: "Preview & Generate", isCompleted: false },
+  { id: "preview", title: "Preview & Export", isCompleted: false },
 ];
 
 const defaultExecutiveSummary: ExecutiveSummarySchema = {
@@ -124,7 +124,7 @@ export const workExperienceAtom = atom(
     get,
     set,
     action: {
-      type: "add" | "update" | "remove";
+      type: "add" | "update" | "remove" | "set";
       data?: WorkExperienceSchema["experiences"];
       index?: number;
     },
@@ -135,6 +135,16 @@ export const workExperienceAtom = atom(
     switch (action.type) {
       case "add":
         newWorkExperience = [...current, ...action.data!];
+        break;
+      case "set":
+        // Replace entirely and dedupe by company+position+startDate
+        const seen = new Set<string>();
+        newWorkExperience = (action.data || []).filter((exp) => {
+          const key = `${exp.company}|${exp.position}|${exp.startDate}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
         break;
       case "update":
         newWorkExperience = current.map((exp, i) =>
@@ -158,7 +168,7 @@ export const educationAtom = atom(
     get,
     set,
     action: {
-      type: "add" | "update" | "remove";
+      type: "add" | "update" | "remove" | "set";
       data?: EducationSchema["educations"];
       index?: number;
     },
@@ -169,6 +179,16 @@ export const educationAtom = atom(
     switch (action.type) {
       case "add":
         newEducation = [...current, ...action.data!];
+        break;
+      case "set":
+        // Replace entirely and dedupe by institution+qualification+completionDate
+        const seen = new Set<string>();
+        newEducation = (action.data || []).filter((edu) => {
+          const key = `${edu.institution}|${edu.qualification}|${edu.completionDate}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
         break;
       case "update":
         newEducation = current.map((edu, i) =>
@@ -192,7 +212,7 @@ export const skillsAtom = atom(
     get,
     set,
     action: {
-      type: "add" | "update" | "remove";
+      type: "add" | "update" | "remove" | "set";
       data?: SkillsSchema;
       index?: number;
     },
@@ -203,6 +223,10 @@ export const skillsAtom = atom(
     switch (action.type) {
       case "add":
         newSkills = { ...current, ...action.data! };
+        break;
+      case "set":
+        // Replace entirely
+        newSkills = action.data || current;
         break;
       case "update":
         newSkills = { ...current, ...action.data! };

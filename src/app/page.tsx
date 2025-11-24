@@ -9,7 +9,7 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
       {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary via-tertiary to-accent animate-landing-gradient">
+      <div className="absolute inset-0 bg-linear-to-br from-primary via-tertiary to-accent animate-landing-gradient">
         <div className="absolute inset-0 backdrop-blur-3xl"></div>
       </div>
 
@@ -18,7 +18,7 @@ const LandingPage = () => {
         <div className="text-center mb-16">
           <h1 className="text-6xl md:text-7xl font-bold animate-text-color mb-6">
             Transform Your{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-indigo-300">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-pink-300 to-indigo-300">
               Career
             </span>
           </h1>

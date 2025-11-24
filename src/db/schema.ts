@@ -8,7 +8,7 @@ import {
   integer,
   primaryKey,
 } from "drizzle-orm/pg-core";
-import type { CVFormData } from "@/schemas/cv.schema";
+import type { Cv } from "@/schemas/cv.schema";
 import type { AdapterAccountType } from "next-auth/adapters";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -107,11 +107,12 @@ export const cvs = pgTable("cvs", {
   status: varchar("status", { length: 50 })
     .notNull()
     .$type<"draft" | "completed">(),
-  formData: jsonb("form_data").$type<CVFormData>(),
+  formData: jsonb("form_data").$type<Cv>(),
   isAiAssisted: boolean("is_ai_assisted").notNull().default(false),
   jobTitle: text("title").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at"),
+  updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -120,6 +121,10 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const cvsRelations = relations(cvs, ({ one }) => ({
   user: one(users, {
     fields: [cvs.userId],
+    references: [users.id],
+  }),
+  updatedByUser: one(users, {
+    fields: [cvs.updatedBy],
     references: [users.id],
   }),
 }));

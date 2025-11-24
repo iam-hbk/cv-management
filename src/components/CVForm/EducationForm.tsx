@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import FormErrors from "./FormErrors";
+import React from "react";
 
 interface EducationFormProps {
   onSubmit: (data: EducationSchema["educations"]) => void;
@@ -54,6 +55,19 @@ export function EducationForm({
             ],
     },
   });
+
+  // Reset form when initialData changes to avoid duplication and stay in sync
+  React.useEffect(() => {
+    const defaultRow = {
+      institution: "",
+      qualification: "",
+      completionDate: new Date().getFullYear(),
+      completed: false,
+    };
+    form.reset({
+      educations: initialData.length > 0 ? initialData : [defaultRow],
+    });
+  }, [initialData, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,

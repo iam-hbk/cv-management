@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,35 +10,23 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { CVFormData } from '@/schemas/cv.schema'
+import type { Cv } from '@/schemas/cv.schema'
 
-interface ExtractedData {
-  isValidCV: boolean
-  validationMessage: string
-  status: 'draft' | 'completed'
-  jobTitle: string
-  formData: CVFormData
+interface ApiResponse {
+  success: boolean
+  data: Cv
+  error?: string
 }
 
 export default function AIExtractPage() {
   const router = useRouter()
-  const [isUploading, setIsUploading] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [extractedData, setExtractedData] = useState<ExtractedData | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [extractedData, setExtractedData] = useState<Cv | null>(null)
   const [dragActive, setDragActive] = useState(false)
 
-  const handleFileUpload = useCallback(async (file: File) => {
-    setIsUploading(true)
-    setError(null)
-    setExtractedData(null)
-
-    try {
+  const extractCVMutation = useMutation({
+    mutationFn: async (file: File): Promise<ApiResponse> => {
       const formData = new FormData()
-      formData.append('cv', file)
-
-      setIsProcessing(true)
-      setIsUploading(false)
+      formData.append('pdf', file)
 
       const response = await fetch('/api/cv/ai-extract', {
         method: 'POST',
@@ -50,42 +39,60 @@ export default function AIExtractPage() {
         throw new Error(result.error || 'Failed to process CV')
       }
 
-      setExtractedData(result.extractedData)
+      return result
+    },
+    onSuccess: (data) => {
+      setExtractedData(data.data)
       toast.success('CV extracted successfully!')
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to process CV'
-      setError(errorMessage)
+    },
+    onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process CV'
       toast.error(errorMessage)
-    } finally {
-      setIsUploading(false)
-      setIsProcessing(false)
-    }
-  }, [])
+    },
+  })
 
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true)
-    } else if (e.type === 'dragleave') {
-      setDragActive(false)
-    }
-  }, [])
+  const saveCVDirectMutation = useMutation({
+    mutationFn: async (cvData: Cv) => {
+      const response = await fetch('/api/cv/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          executiveSummary: cvData.executiveSummary,
+          personalInfo: cvData.personalInfo,
+          workHistory: cvData.workHistory,
+          education: cvData.education,
+          skills: cvData.skills,
+          isAiAssisted: true,
+        }),
+      })
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
+      if (!response.ok) {
+        throw new Error('Failed to save CV')
+      }
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0]
+      return response.json()
+    },
+    onSuccess: () => {
+      toast.success('CV saved successfully!')
+      setExtractedData(null)
+      router.push('/dashboard')
+    },
+    onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save CV'
+      toast.error(errorMessage)
+    },
+  })
 
+  const handleFileUpload = useCallback(
+    (file: File) => {
       // Validate file type
       const allowedTypes = [
         'application/pdf',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain'
+        'text/plain',
       ]
 
       if (!allowedTypes.includes(file.type)) {
@@ -99,38 +106,62 @@ export default function AIExtractPage() {
         return
       }
 
-      handleFileUpload(file)
-    }
-  }, [handleFileUpload])
+      extractCVMutation.mutate(file)
+    },
+    [extractCVMutation]
+  )
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      handleFileUpload(file)
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true)
+    } else if (e.type === 'dragleave') {
+      setDragActive(false)
     }
-  }, [handleFileUpload])
+  }, [])
 
-  const handleSaveCV = useCallback(async () => {
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setDragActive(false)
+
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileUpload(e.dataTransfer.files[0])
+      }
+    },
+    [handleFileUpload]
+  )
+
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFileUpload(e.target.files[0])
+      }
+    },
+    [handleFileUpload]
+  )
+
+  const handleSaveCV = useCallback(() => {
     if (!extractedData) return
 
     try {
-      // Navigate to the edit page with the extracted data
-      // We'll pass the data via URL params or local storage
-      const cvData = {
-        status: extractedData.status,
-        jobTitle: extractedData.jobTitle,
-        formData: extractedData.formData,
-        isAiAssisted: true,
-      }
-
       // Store in sessionStorage for the edit page
-      sessionStorage.setItem('aiExtractedCV', JSON.stringify(cvData))
-
+      sessionStorage.setItem('aiExtractedCV', JSON.stringify(extractedData))
       router.push('/dashboard/curriculum-vitae/new')
-    } catch (err) {
+    } catch {
       toast.error('Failed to save CV data')
     }
   }, [extractedData, router])
+
+  const handleSaveCVDirectly = useCallback(() => {
+    if (!extractedData) return
+    saveCVDirectMutation.mutate(extractedData)
+  }, [extractedData, saveCVDirectMutation])
+
+  const isProcessing = extractCVMutation.isPending
+  const isSavingDirect = saveCVDirectMutation.isPending
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -166,15 +197,13 @@ export default function AIExtractPage() {
               onDragOver={handleDrag}
               onDrop={handleDrop}
             >
-              {isUploading || isProcessing ? (
+              {isProcessing ? (
                 <div className="flex flex-col items-center gap-4">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <div>
-                    <p className="font-medium">
-                      {isUploading ? 'Uploading file...' : 'AI is processing your CV...'}
-                    </p>
+                    <p className="font-medium">AI is processing your CV...</p>
                     <p className="text-sm text-muted-foreground">
-                      {isProcessing ? 'This may take a few moments' : 'Please wait'}
+                      This may take a few moments
                     </p>
                   </div>
                 </div>
@@ -204,10 +233,14 @@ export default function AIExtractPage() {
         </Card>
 
         {/* Error Display */}
-        {error && (
+        {extractCVMutation.isError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {extractCVMutation.error instanceof Error
+                ? extractCVMutation.error.message
+                : 'An error occurred while processing your CV'}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -225,16 +258,24 @@ export default function AIExtractPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Job Title</label>
-                  <p className="text-sm text-muted-foreground">{extractedData.jobTitle}</p>
+                  <label className="text-sm font-medium">Name</label>
+                  <p className="text-sm text-muted-foreground">
+                    {extractedData.personalInfo.firstName} {extractedData.personalInfo.lastName}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Status</label>
-                  <Badge variant={extractedData.status === 'completed' ? 'default' : 'secondary'}>
-                    {extractedData.status}
-                  </Badge>
+                  <label className="text-sm font-medium">Profession</label>
+                  <p className="text-sm text-muted-foreground">
+                    {extractedData.personalInfo.profession}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Email</label>
+                  <p className="text-sm text-muted-foreground">
+                    {extractedData.personalInfo.email}
+                  </p>
                 </div>
               </div>
 
@@ -247,28 +288,44 @@ export default function AIExtractPage() {
                   <div>
                     <label className="font-medium">Name</label>
                     <p className="text-muted-foreground">
-                      {extractedData.formData.personalInfo.firstName} {extractedData.formData.personalInfo.lastName}
+                      {extractedData.personalInfo.firstName} {extractedData.personalInfo.lastName}
                     </p>
                   </div>
                   <div>
                     <label className="font-medium">Email</label>
-                    <p className="text-muted-foreground">{extractedData.formData.personalInfo.email}</p>
+                    <p className="text-muted-foreground">{extractedData.personalInfo.email}</p>
                   </div>
                   <div>
                     <label className="font-medium">Phone</label>
-                    <p className="text-muted-foreground">{extractedData.formData.personalInfo.phone}</p>
+                    <p className="text-muted-foreground">{extractedData.personalInfo.phone}</p>
                   </div>
                   <div>
                     <label className="font-medium">Location</label>
-                    <p className="text-muted-foreground">{extractedData.formData.personalInfo.location}</p>
+                    <p className="text-muted-foreground">{extractedData.personalInfo.location}</p>
                   </div>
                   <div>
                     <label className="font-medium">Profession</label>
-                    <p className="text-muted-foreground">{extractedData.formData.personalInfo.profession}</p>
+                    <p className="text-muted-foreground">{extractedData.personalInfo.profession}</p>
                   </div>
                   <div>
                     <label className="font-medium">Nationality</label>
-                    <p className="text-muted-foreground">{extractedData.formData.personalInfo.nationality}</p>
+                    <p className="text-muted-foreground">{extractedData.personalInfo.nationality}</p>
+                  </div>
+                  <div>
+                    <label className="font-medium">Gender</label>
+                    <p className="text-muted-foreground capitalize">{extractedData.personalInfo.gender}</p>
+                  </div>
+                  <div>
+                    <label className="font-medium">Availability</label>
+                    <p className="text-muted-foreground">{extractedData.personalInfo.availability}</p>
+                  </div>
+                  <div>
+                    <label className="font-medium">Current Salary</label>
+                    <p className="text-muted-foreground">${extractedData.personalInfo.currentSalary.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <label className="font-medium">Expected Salary</label>
+                    <p className="text-muted-foreground">${extractedData.personalInfo.expectedSalary.toLocaleString()}</p>
                   </div>
                 </div>
               </div>
@@ -279,7 +336,7 @@ export default function AIExtractPage() {
               <div>
                 <h3 className="font-semibold mb-3">Executive Summary</h3>
                 <p className="text-sm text-muted-foreground bg-muted p-3 rounded">
-                  {extractedData.formData.executiveSummary}
+                  {extractedData.executiveSummary}
                 </p>
               </div>
 
@@ -289,21 +346,28 @@ export default function AIExtractPage() {
               <div>
                 <h3 className="font-semibold mb-3">Work Experience</h3>
                 <div className="space-y-3">
-                  {extractedData.formData.workHistory.experiences.length > 0 ? (
-                    extractedData.formData.workHistory.experiences.map((exp, index) => (
+                  {extractedData.workHistory.experiences.length > 0 ? (
+                    extractedData.workHistory.experiences.map((exp, index) => (
                       <div key={index} className="border rounded p-3">
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="font-medium">{exp.position}</h4>
                           <span className="text-sm text-muted-foreground">
-                            {typeof exp.startDate === 'string' ? exp.startDate : exp.startDate.toLocaleDateString()} - {exp.endDate ? (typeof exp.endDate === 'string' ? exp.endDate : exp.endDate.toLocaleDateString()) : 'Present'}
+                            {exp.startDate} - {exp.endDate || 'Present'}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{exp.company}</p>
-                        <ul className="text-sm text-muted-foreground list-disc list-inside">
-                          {exp.duties.map((duty, i) => (
-                            <li key={i}>{duty}</li>
-                          ))}
-                        </ul>
+                        {exp.duties.length > 0 && (
+                          <ul className="text-sm text-muted-foreground list-disc list-inside">
+                            {exp.duties.map((duty, i) => (
+                              <li key={i}>{duty}</li>
+                            ))}
+                          </ul>
+                        )}
+                        {exp.reasonForLeaving && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            <span className="font-medium">Reason for leaving:</span> {exp.reasonForLeaving}
+                          </p>
+                        )}
                       </div>
                     ))
                   ) : (
@@ -318,8 +382,8 @@ export default function AIExtractPage() {
               <div>
                 <h3 className="font-semibold mb-3">Education</h3>
                 <div className="space-y-2">
-                  {extractedData.formData.education.educations.length > 0 ? (
-                    extractedData.formData.education.educations.map((edu, index) => (
+                  {extractedData.education.educations.length > 0 ? (
+                    extractedData.education.educations.map((edu, index) => (
                       <div key={index} className="flex justify-between items-center p-2 border rounded">
                         <div>
                           <p className="font-medium">{edu.qualification}</p>
@@ -340,35 +404,56 @@ export default function AIExtractPage() {
               <div>
                 <h3 className="font-semibold mb-3">Skills</h3>
                 <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium">Computer Skills</label>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {extractedData.formData.skills.computerSkills.map((skill, index) => (
-                        <Badge key={index} variant="secondary">{skill}</Badge>
-                      ))}
+                  {extractedData.skills.computerSkills.length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium">Computer Skills</label>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {extractedData.skills.computerSkills.map((skill, index) => (
+                          <Badge key={index} variant="secondary">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Other Skills</label>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {extractedData.formData.skills.otherSkills.map((skill, index) => (
-                        <Badge key={index} variant="secondary">{skill}</Badge>
-                      ))}
+                  )}
+                  {extractedData.skills.otherSkills.length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium">Other Skills</label>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {extractedData.skills.otherSkills.map((skill, index) => (
+                          <Badge key={index} variant="secondary">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="flex gap-4 pt-6">
-                <Button onClick={handleSaveCV} className="flex-1">
+                <Button 
+                  onClick={handleSaveCVDirectly} 
+                  disabled={isSavingDirect}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  {isSavingDirect ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Saving CV...
+                    </>
+                  ) : (
+                    'Save CV Now'
+                  )}
+                </Button>
+                <Button onClick={handleSaveCV} variant="outline" className="flex-1">
                   Continue to Edit
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => {
                     setExtractedData(null)
-                    setError(null)
                   }}
                 >
                   Upload Another CV

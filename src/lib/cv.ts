@@ -12,6 +12,12 @@ export async function getCVs() {
           email: true,
         },
       },
+      updatedByUser: {
+        columns: {
+          name: true,
+          email: true,
+        },
+      },
     },
   });
   console.log("dbCVs\n\n", dbCVs);
@@ -29,6 +35,12 @@ export async function getCVs() {
         name: cv.user?.name ?? cv.user?.email ?? "unknown",
         email: cv.user?.email ?? "unknown@example.com",
       },
+      lastUpdatedBy: cv.updatedByUser
+        ? {
+            name: cv.updatedByUser.name ?? cv.updatedByUser.email ?? "unknown",
+            email: cv.updatedByUser.email ?? "unknown@example.com",
+          }
+        : null,
       isAiAssisted: cv.isAiAssisted, // If we have AI data, it was AI assisted
       status: cv.status,
       formData: cv.formData,
@@ -41,6 +53,12 @@ export async function getCVById(id: string) {
     where: eq(cvs.id, id),
     with: {
       user: {
+        columns: {
+          name: true,
+          email: true,
+        },
+      },
+      updatedByUser: {
         columns: {
           name: true,
           email: true,
@@ -65,6 +83,12 @@ export async function getCVById(id: string) {
       name: dbCV.user?.name ?? dbCV.user?.email ?? "unknown",
       email: dbCV.user?.email ?? "unknown@example.com",
     },
+    lastUpdatedBy: dbCV.updatedByUser
+      ? {
+          name: dbCV.updatedByUser.name ?? dbCV.updatedByUser.email ?? "unknown",
+          email: dbCV.updatedByUser.email ?? "unknown@example.com",
+        }
+      : null,
     isAiAssisted: dbCV.isAiAssisted, // If we have AI data, it was AI assisted
     status: dbCV.status,
     formData: dbCV.formData,

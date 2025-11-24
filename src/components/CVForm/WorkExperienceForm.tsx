@@ -31,6 +31,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import FormErrors from "./FormErrors";
 import { Checkbox } from "@/components/ui/checkbox";
+import React from "react";
 
 interface WorkExperienceFormProps {
   onSubmit: (data: WorkExperienceSchema["experiences"]) => void;
@@ -52,8 +53,8 @@ export function WorkExperienceForm({
               {
                 company: "",
                 position: "",
-                startDate: new Date(),
-                endDate: addDays(new Date(), 365),
+                startDate: new Date().toISOString().split('T')[0],
+                endDate: addDays(new Date(), 365).toISOString().split('T')[0],
                 current: false,
                 duties: [""],
                 reasonForLeaving: "",
@@ -62,10 +63,37 @@ export function WorkExperienceForm({
     },
   });
 
+  // Reset form when initialData changes to avoid duplication and stay in sync
+  React.useEffect(() => {
+    const defaultRow = {
+      company: "",
+      position: "",
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: addDays(new Date(), 365).toISOString().split('T')[0],
+      current: false,
+      duties: [""],
+      reasonForLeaving: "",
+    };
+    form.reset({
+      experiences: initialData.length > 0 ? initialData : [defaultRow],
+    });
+  }, [initialData, form]);
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "experiences",
   });
+
+  // Helper to convert string date to Date object for calendar
+  const parseDate = (dateStr: string | undefined): Date | undefined => {
+    if (!dateStr) return undefined;
+    return new Date(dateStr);
+  };
+
+  // Helper to format Date to ISO string
+  const formatDateToISO = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
 
   return (
     <Form {...form}>
@@ -138,7 +166,7 @@ export function WorkExperienceForm({
                                       {startDateField.value ? (
                                         <>
                                           {format(
-                                            startDateField.value,
+                                            parseDate(startDateField.value) || new Date(),
                                             "LLL yyyy",
                                           )}
                                           {endDateField.value &&
@@ -149,7 +177,7 @@ export function WorkExperienceForm({
                                                 {" "}
                                                 -{" "}
                                                 {format(
-                                                  endDateField.value,
+                                                  parseDate(endDateField.value) || new Date(),
                                                   "LLL yyyy",
                                                 )}
                                               </>
@@ -177,16 +205,14 @@ export function WorkExperienceForm({
                                           </FormLabel>
                                           <select
                                             className="h-8 w-[100px] rounded-md border border-input px-2 text-sm"
-                                            value={startDateField.value?.getFullYear()}
+                                            value={parseDate(startDateField.value)?.getFullYear() || new Date().getFullYear()}
                                             onChange={(e) => {
-                                              const newDate = new Date(
-                                                startDateField.value ||
-                                                  new Date(),
-                                              );
+                                              const currentDate = parseDate(startDateField.value) || new Date();
+                                              const newDate = new Date(currentDate);
                                               newDate.setFullYear(
                                                 parseInt(e.target.value),
                                               );
-                                              startDateField.onChange(newDate);
+                                              startDateField.onChange(formatDateToISO(newDate));
                                             }}
                                           >
                                             {Array.from(
@@ -209,10 +235,10 @@ export function WorkExperienceForm({
                                   </div>
                                   <Calendar
                                     mode="single"
-                                    selected={startDateField.value}
+                                    selected={parseDate(startDateField.value)}
                                     onSelect={(date) => {
                                       if (date) {
-                                        startDateField.onChange(date);
+                                        startDateField.onChange(formatDateToISO(date));
                                       }
                                     }}
                                     initialFocus
@@ -250,7 +276,7 @@ export function WorkExperienceForm({
                                       >
                                         <CalendarIcon className="mr-2 h-4 w-4" />
                                         {endDateField.value ? (
-                                          format(endDateField.value, "LLL yyyy")
+                                          format(parseDate(endDateField.value) || new Date(), "LLL yyyy")
                                         ) : (
                                           <span>Select end date</span>
                                         )}
@@ -270,16 +296,14 @@ export function WorkExperienceForm({
                                             </FormLabel>
                                             <select
                                               className="h-8 w-[100px] rounded-md border border-input px-2 text-sm"
-                                              value={endDateField.value?.getFullYear()}
+                                              value={parseDate(endDateField.value)?.getFullYear() || new Date().getFullYear()}
                                               onChange={(e) => {
-                                                const newDate = new Date(
-                                                  endDateField.value ||
-                                                    new Date(),
-                                                );
+                                                const currentDate = parseDate(endDateField.value) || new Date();
+                                                const newDate = new Date(currentDate);
                                                 newDate.setFullYear(
                                                   parseInt(e.target.value),
                                                 );
-                                                endDateField.onChange(newDate);
+                                                endDateField.onChange(formatDateToISO(newDate));
                                               }}
                                             >
                                               {Array.from(
@@ -304,10 +328,10 @@ export function WorkExperienceForm({
                                     </div>
                                     <Calendar
                                       mode="single"
-                                      selected={endDateField.value}
+                                      selected={parseDate(endDateField.value)}
                                       onSelect={(date) => {
                                         if (date) {
-                                          endDateField.onChange(date);
+                                          endDateField.onChange(formatDateToISO(date));
                                         }
                                       }}
                                       initialFocus
@@ -382,8 +406,8 @@ export function WorkExperienceForm({
               append({
                 company: "",
                 position: "",
-                startDate: new Date(),
-                endDate: new Date(),
+                startDate: new Date().toISOString().split('T')[0],
+                endDate: addDays(new Date(), 365).toISOString().split('T')[0],
                 current: false,
                 duties: [""],
                 reasonForLeaving: "",
