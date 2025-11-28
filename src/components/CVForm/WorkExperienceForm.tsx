@@ -43,12 +43,29 @@ export function WorkExperienceForm({
   onSubmit,
   initialData,
 }: WorkExperienceFormProps) {
+  // Normalize initial data to handle "N/A" values and invalid dates
+  const normalizeInitialData = (data: WorkExperienceSchema["experiences"]) => {
+    return data.map((exp) => ({
+      ...exp,
+      startDate: exp.startDate && exp.startDate.trim() !== "" && exp.startDate.toLowerCase() !== "n/a" 
+        ? exp.startDate 
+        : new Date().toISOString().split('T')[0],
+      endDate: exp.endDate && exp.endDate.trim() !== "" && exp.endDate.toLowerCase() !== "n/a"
+        ? exp.endDate
+        : addDays(new Date(), 365).toISOString().split('T')[0],
+      reasonForLeaving: exp.reasonForLeaving && exp.reasonForLeaving.toLowerCase() !== "n/a"
+        ? exp.reasonForLeaving
+        : "",
+      duties: exp.duties && exp.duties.length > 0 ? exp.duties : [""],
+    }));
+  };
+
   const form = useForm<WorkExperienceSchema>({
     resolver: zodResolver(workExperienceSchema),
     defaultValues: {
       experiences:
         initialData.length > 0
-          ? initialData
+          ? normalizeInitialData(initialData)
           : [
               {
                 company: "",
@@ -75,7 +92,7 @@ export function WorkExperienceForm({
       reasonForLeaving: "",
     };
     form.reset({
-      experiences: initialData.length > 0 ? initialData : [defaultRow],
+      experiences: initialData.length > 0 ? normalizeInitialData(initialData) : [defaultRow],
     });
   }, [initialData, form]);
 
@@ -86,8 +103,15 @@ export function WorkExperienceForm({
 
   // Helper to convert string date to Date object for calendar
   const parseDate = (dateStr: string | undefined): Date | undefined => {
-    if (!dateStr) return undefined;
-    return new Date(dateStr);
+    if (!dateStr || dateStr.trim() === "" || dateStr.toLowerCase() === "n/a") {
+      return undefined;
+    }
+    const date = new Date(dateStr);
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return undefined;
+    }
+    return date;
   };
 
   // Helper to format Date to ISO string

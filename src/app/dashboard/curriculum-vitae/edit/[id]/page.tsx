@@ -48,6 +48,22 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 
   const { data: cv, isLoading, error, isError,refetch } = useCV(id || "");
 
+  // Helper function to safely format dates
+  const formatDateSafe = (dateStr: string | undefined | null): string => {
+    if (!dateStr || dateStr.trim() === "" || dateStr.toLowerCase() === "n/a") {
+      return "N/A";
+    }
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return "N/A";
+      }
+      return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+    } catch {
+      return "N/A";
+    }
+  };
+
   const [currentStep, setCurrentStep] = useAtom(currentStepAtom);
   const [executiveSummary, setExecutiveSummary] = useAtom(executiveSummaryAtom);
   const [personalInfo, setPersonalInfo] = useAtom(personalInfoAtom);
@@ -353,7 +369,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
                         <div className="mb-2 flex items-center justify-between">
                           <h4 className="font-semibold text-gray-900">{exp.position}</h4>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
-                            {new Date(exp.startDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" })} - {exp.endDate ? new Date(exp.endDate).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "Present"}
+                            {formatDateSafe(exp.startDate)} - {exp.current ? "Present" : (exp.endDate ? formatDateSafe(exp.endDate) : "N/A")}
                             {exp.current && <Badge variant="secondary">Current</Badge>}
                           </div>
                         </div>

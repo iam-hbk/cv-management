@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Download,
   Edit,
@@ -16,6 +17,7 @@ import {
   GraduationCap,
   Code,
   FileText,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { useCV } from "@/hooks/use-cv";
@@ -24,7 +26,9 @@ import type {
   EducationSchema,
   SkillsSchema,
 } from "@/schemas/cv.schema";
-import { use } from "react";
+import { use, useState, useEffect } from "react";
+import { transformCVToAPIFormat } from "@/utils/cv-transform";
+import { toast } from "sonner";
 
 interface CVViewPageProps {
   params: Promise<{
@@ -35,6 +39,18 @@ interface CVViewPageProps {
 export default function CVViewPage({ params }: CVViewPageProps) {
   const { id } = use(params);
   const { data: cv, isLoading, error, isError } = useCV(id);
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (downloadUrl) {
+        window.URL.revokeObjectURL(downloadUrl);
+      }
+    };
+  }, [downloadUrl]);
 
   if (isLoading) {
     return (
@@ -88,14 +104,95 @@ export default function CVViewPage({ params }: CVViewPageProps) {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleExportDocx = async () => {
+    if (!cv) return;
+
+    setIsExportingDocx(true);
+    setExportError(null);
+
+    try {
+      // Transform CV data to API format
+      const apiData = transformCVToAPIFormat(cv.formData);
+
+      // Make API request through Next.js proxy route (avoids CORS issues)
+      const response = await fetch("/api/cv/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(apiData),
+      });
+
+      if (!response.ok) {
+        if (response.status === 422) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.detail
+              ? JSON.stringify(errorData.detail)
+              : "Validation error: Invalid CV data",
+          );
+        }
+        throw new Error(
+          `Failed to generate CV: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      // Get filename from content-disposition header
+      const contentDisposition = response.headers.get("content-disposition");
+      let filename = `CV_${cv.formData.personalInfo.firstName}_${cv.formData.personalInfo.lastName}.docx`;
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Convert response to blob
+      const blob = await response.blob();
+
+      // Create blob URL and store it for download
+      const url = window.URL.createObjectURL(blob);
+      
+      // Cleanup previous URL if exists
+      if (downloadUrl) {
+        window.URL.revokeObjectURL(downloadUrl);
+      }
+      
+      setDownloadUrl(url);
+
+      // Show success toast with download link
+      toast.success("CV exported successfully!", {
+        description: `Your CV document "${filename}" is ready to download.`,
+        action: {
+          label: "Download",
+          onClick: () => {
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          },
+        },
+        duration: 10000, // Show for 10 seconds
+      });
+    } catch (error) {
+      console.error("Error exporting DOCX:", error);
+      setExportError(
+        error instanceof Error
+          ? error.message
+          : "Failed to export CV. Please try again.",
+      );
+    } finally {
+      setIsExportingDocx(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50/50">
       {/* Header */}
-      <div className="print:hidden">
+      <div>
         <div className="mx-auto max-w-4xl px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -119,17 +216,37 @@ export default function CVViewPage({ params }: CVViewPageProps) {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Link href={`/dashboard/curriculum-vitae/edit/${cv.id}`}>
-                <Button variant="outline" size="sm">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit CV
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2">
+                <Link href={`/dashboard/curriculum-vitae/edit/${cv.id}`}>
+                  <Button variant="outline" size="sm">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit CV
+                  </Button>
+                </Link>
+                <Button
+                  onClick={handleExportDocx}
+                  size="sm"
+                  disabled={isExportingDocx}
+                >
+                  {isExportingDocx ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export DOCX
+                    </>
+                  )}
                 </Button>
-              </Link>
-              <Button onClick={handlePrint} size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Export PDF
-              </Button>
+              </div>
+              {exportError && (
+                <Alert variant="destructive" className="w-full max-w-md">
+                  <AlertDescription>{exportError}</AlertDescription>
+                </Alert>
+              )}
             </div>
           </div>
         </div>
@@ -421,30 +538,6 @@ export default function CVViewPage({ params }: CVViewPageProps) {
           </Card>
         </div>
       </div>
-
-      {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          .bg-gray-50\\/50 {
-            background: white !important;
-          }
-          .border-b {
-            border-bottom: 2px solid #000 !important;
-          }
-          .text-gray-900 {
-            color: #000 !important;
-          }
-          .text-gray-700 {
-            color: #333 !important;
-          }
-          .text-gray-600 {
-            color: #555 !important;
-          }
-          .text-gray-500 {
-            color: #666 !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

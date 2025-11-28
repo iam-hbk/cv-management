@@ -2,13 +2,13 @@
 
 import { useState, useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Sparkles, Link as LinkIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Cv } from '@/schemas/cv.schema'
 
@@ -20,13 +20,23 @@ interface ApiResponse {
 
 export default function AIExtractPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [extractedData, setExtractedData] = useState<Cv | null>(null)
   const [dragActive, setDragActive] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const blobUrl = searchParams.get('blobUrl')
 
   const extractCVMutation = useMutation({
-    mutationFn: async (file: File): Promise<ApiResponse> => {
+    mutationFn: async (input: File | string): Promise<ApiResponse> => {
       const formData = new FormData()
-      formData.append('pdf', file)
+      
+      if (typeof input === 'string') {
+        // Handle blob URL
+        formData.append('blobUrl', input)
+      } else {
+        // Handle file upload
+        formData.append('pdf', input)
+      }
 
       const response = await fetch('/api/cv/ai-extract', {
         method: 'POST',
@@ -43,6 +53,7 @@ export default function AIExtractPage() {
     },
     onSuccess: (data) => {
       setExtractedData(data.data)
+      setSelectedFile(null) // Clear selected file after successful extraction
       toast.success('CV extracted successfully!')
     },
     onError: (error) => {
@@ -50,6 +61,18 @@ export default function AIExtractPage() {
       toast.error(errorMessage)
     },
   })
+
+  const handleExtractFromBlob = useCallback(() => {
+    if (blobUrl) {
+      extractCVMutation.mutate(blobUrl)
+    }
+  }, [blobUrl, extractCVMutation])
+
+  const handleExtractFromFile = useCallback(() => {
+    if (selectedFile) {
+      extractCVMutation.mutate(selectedFile)
+    }
+  }, [selectedFile, extractCVMutation])
 
   const saveCVDirectMutation = useMutation({
     mutationFn: async (cvData: Cv) => {
@@ -85,7 +108,7 @@ export default function AIExtractPage() {
     },
   })
 
-  const handleFileUpload = useCallback(
+  const handleFileSelect = useCallback(
     (file: File) => {
       // Validate file type
       const allowedTypes = [
@@ -106,9 +129,11 @@ export default function AIExtractPage() {
         return
       }
 
-      extractCVMutation.mutate(file)
+      // Store the file instead of immediately processing
+      setSelectedFile(file)
+      setExtractedData(null) // Clear any previous extraction
     },
-    [extractCVMutation]
+    []
   )
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -128,19 +153,19 @@ export default function AIExtractPage() {
       setDragActive(false)
 
       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleFileUpload(e.dataTransfer.files[0])
+        handleFileSelect(e.dataTransfer.files[0])
       }
     },
-    [handleFileUpload]
+    [handleFileSelect]
   )
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files[0]) {
-        handleFileUpload(e.target.files[0])
+        handleFileSelect(e.target.files[0])
       }
     },
-    [handleFileUpload]
+    [handleFileSelect]
   )
 
   const handleSaveCV = useCallback(() => {
@@ -174,40 +199,103 @@ export default function AIExtractPage() {
           </p>
         </div>
 
-        {/* Upload Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Upload CV File
-            </CardTitle>
-            <CardDescription>
-              Supported formats: PDF, DOC, DOCX, TXT (max 10MB)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                dragActive
-                  ? 'border-primary bg-primary/5'
-                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              {isProcessing ? (
-                <div className="flex flex-col items-center gap-4">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <div>
-                    <p className="font-medium">AI is processing your CV...</p>
-                    <p className="text-sm text-muted-foreground">
-                      This may take a few moments
-                    </p>
-                  </div>
+        {/* Blob URL Section */}
+        {blobUrl && !extractedData && !isProcessing && (
+          <Card className="border-primary/50 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LinkIcon className="h-5 w-5" />
+                CV from Blob Storage
+              </CardTitle>
+              <CardDescription>
+                A CV file has been loaded from blob storage. Click the button below to start AI extraction.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="rounded-lg bg-muted p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Blob URL:</p>
+                  <p className="text-sm break-all">{blobUrl}</p>
                 </div>
-              ) : (
+                <Button 
+                  onClick={handleExtractFromBlob}
+                  className="w-full"
+                  size="lg"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Start AI Extraction
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Selected File Section */}
+        {selectedFile && !extractedData && !isProcessing && (
+          <Card className="border-primary/50 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Selected CV File
+              </CardTitle>
+              <CardDescription>
+                A file has been selected. Click the button below to start AI extraction.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="rounded-lg bg-muted p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">File Name:</p>
+                  <p className="text-sm font-medium">{selectedFile.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleExtractFromFile}
+                    className="flex-1"
+                    size="lg"
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Start AI Extraction
+                  </Button>
+                  <Button 
+                    onClick={() => setSelectedFile(null)}
+                    variant="outline"
+                  >
+                    Remove File
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Upload Section */}
+        {!blobUrl && !selectedFile && !extractedData && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Upload CV File
+              </CardTitle>
+              <CardDescription>
+                Supported formats: PDF, DOC, DOCX, TXT (max 10MB)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  dragActive
+                    ? 'border-primary bg-primary/5'
+                    : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
                 <div className="flex flex-col items-center gap-4">
                   <FileText className="h-12 w-12 text-muted-foreground" />
                   <div>
@@ -227,10 +315,27 @@ export default function AIExtractPage() {
                     </label>
                   </Button>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Processing State */}
+        {isProcessing && !extractedData && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center gap-4 py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div>
+                  <p className="font-medium">AI is processing your CV...</p>
+                  <p className="text-sm text-muted-foreground">
+                    This may take a few moments
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Error Display */}
         {extractCVMutation.isError && (
@@ -454,6 +559,7 @@ export default function AIExtractPage() {
                   variant="ghost"
                   onClick={() => {
                     setExtractedData(null)
+                    setSelectedFile(null)
                   }}
                 >
                   Upload Another CV
