@@ -20,7 +20,7 @@ export async function getCVs() {
       },
     },
   });
-  console.log("dbCVs\n\n", dbCVs);
+  console.dir(dbCVs, { depth: null });
 
   return dbCVs.map((cv) => {
     if (!cv.formData) {

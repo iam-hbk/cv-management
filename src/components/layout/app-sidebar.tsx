@@ -2,7 +2,8 @@
 
 import * as React from "react";
 
-import { NavProjects } from "@/components/layout/nav-projects";
+import { NavUploadedCVs } from "@/components/layout/nav-uploaded-cvs";
+import { NavRecents } from "@/components/layout/nav-recents";
 import {
   Sidebar,
   SidebarContent,
@@ -13,23 +14,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
-
-const data = {
-  recents: [
-    {
-      name: "Heritier Kaumbu",
-      url: "#",
-    },
-    {
-      url: "#",
-      name: "Gabriel Sibindi",
-    },
-    {
-      name: "Terry Mogano",
-      url: "#",
-    },
-  ],
-};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -54,7 +38,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavProjects recents={data.recents} />
+        <NavUploadedCVs />
+        <NavRecents />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>
