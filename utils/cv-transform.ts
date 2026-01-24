@@ -93,17 +93,21 @@ export function transformCVToAPIFormat(cvData: CVFormData): APICVSchema {
       location: cvData.personalInfo.location,
       gender: cvData.personalInfo.gender,
       availability: availability,
-      nationality: cvData.personalInfo.nationality,
+      nationality: cvData.personalInfo.nationality?.trim()
+        ? cvData.personalInfo.nationality
+        : "Not specified",
       currentSalary: cvData.personalInfo.currentSalary,
       expectedSalary: cvData.personalInfo.expectedSalary,
       driversLicense: cvData.personalInfo.driversLicense ?? false,
-      idNumber: cvData.personalInfo.idNumber,
+      idNumber: cvData.personalInfo.idNumber?.trim()
+        ? cvData.personalInfo.idNumber
+        : "Not specified",
     },
     workHistory: {
       experiences: cvData.workHistory.experiences.map((exp) => ({
         company: exp.company,
         position: exp.position,
-        startDate: exp.startDate || "", // Ensure it's a string, even if empty
+        startDate: exp.startDate?.trim() || "Not specified",
         // Convert empty string to null, especially when current is true
         endDate:
           exp.current || !exp.endDate || exp.endDate.trim() === ""
@@ -111,13 +115,13 @@ export function transformCVToAPIFormat(cvData: CVFormData): APICVSchema {
             : exp.endDate,
         current: exp.current,
         duties: exp.duties.filter((duty) => duty.trim() !== ""), // Filter out empty duties
-        reasonForLeaving: exp.reasonForLeaving || "",
+        reasonForLeaving: exp.reasonForLeaving?.trim() || "Not specified",
       })),
     },
     education: {
       educations: cvData.education.educations.map((edu) => ({
-        institution: edu.institution,
-        qualification: edu.qualification,
+        institution: edu.institution?.trim() ? edu.institution : "Not specified",
+        qualification: edu.qualification?.trim() ? edu.qualification : "Not specified",
         completionDate: edu.completionDate,
         completed: edu.completed,
       })),
@@ -130,7 +134,7 @@ export function transformCVToAPIFormat(cvData: CVFormData): APICVSchema {
         (skill) => skill.trim() !== "",
       ),
       skillsMatrix: cvData.skills.skillsMatrix.map((skill) => ({
-        skill: skill.skill,
+        skill: skill.skill?.trim() || "Not specified",
         yearsExperience: skill.yearsExperience,
         proficiency: skill.proficiency,
         lastUsed: skill.lastUsed,

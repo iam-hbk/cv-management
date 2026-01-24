@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../lib/auth";
 import { clientEnv } from "../../../../config/client-env";
+import { parseContentDispositionFilename } from "../../../../lib/content-disposition";
+import { sanitizeForCvGenerate } from "../../../../lib/sanitize-cv-generate";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,8 +12,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the request body
+    // Get the request body and sanitize for external API (minLength 1, etc.)
     const body = await request.json();
+    const bodyToSend = sanitizeForCvGenerate(body) as Record<string, unknown>;
 
     // Forward the request to the external API
     const apiUrl = `${clientEnv.NEXT_PUBLIC_CV_GENERATION_API_URL}/api/generate-cv`;
@@ -20,7 +23,7 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(bodyToSend),
     });
 
     if (!response.ok) {
@@ -49,8 +52,8 @@ export async function POST(request: NextRequest) {
       }
       
       console.error("API validation error:", errorMessage);
-      console.error("Request body:", JSON.stringify(body, null, 2));
-      
+      console.error("Request body (sanitized):", JSON.stringify(bodyToSend, null, 2));
+
       return NextResponse.json(
         { error: errorMessage },
         { status: response.status },
@@ -60,15 +63,21 @@ export async function POST(request: NextRequest) {
     // Get the file blob
     const blob = await response.blob();
 
-    // Get filename from content-disposition header
-    const contentDisposition = response.headers.get("content-disposition");
-    let filename = "CV.docx";
-    if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
-      if (filenameMatch && filenameMatch[1]) {
-        filename = filenameMatch[1];
-      }
+    // Prefer filename from request body; fallback to Content-Disposition; default CV.docx
+    let filename: string;
+    const pi = bodyToSend?.personalInfo as Record<string, unknown> | undefined;
+    const first = pi?.firstName;
+    const last = pi?.lastName;
+    if (typeof first === "string" && typeof last === "string" && first && last) {
+      filename = `CV_${first}_${last}.docx`;
+    } else {
+      const fromHeader = parseContentDispositionFilename(
+        response.headers.get("content-disposition")
+      );
+      filename = fromHeader || "CV.docx";
     }
+    filename = filename.replace(/["\\]/g, "_").replace(/\s+/g, " ").trim();
+    if (!filename) filename = "CV.docx";
 
     // Return the file with proper headers
     return new NextResponse(blob, {

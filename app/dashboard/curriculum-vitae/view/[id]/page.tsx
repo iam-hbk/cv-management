@@ -137,16 +137,8 @@ export default function CVViewPage({ params }: CVViewPageProps) {
         );
       }
 
-      // Get filename from content-disposition header
-      const contentDisposition = response.headers.get("content-disposition");
-      let filename = `CV_${cv.formData.personalInfo.firstName}_${cv.formData.personalInfo.lastName}.docx`;
-
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1];
-        }
-      }
+      // Use built-in filename (Option A: do not parse Content-Disposition to avoid docx__ from bad headers)
+      const filename = `CV_${cv.formData.personalInfo.firstName}_${cv.formData.personalInfo.lastName}.docx`;
 
       // Convert response to blob
       const blob = await response.blob();
