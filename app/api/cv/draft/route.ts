@@ -11,12 +11,14 @@ export async function POST(request: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const data = (await request.json()) as DraftCV;
+    const data = (await request.json()) as DraftCV & { sourceJobSeekerId?: string | null };
+    const { sourceJobSeekerId = null, ...rest } = data;
 
     const cv = await db
       .insert(cvs)
       .values({
-        ...data,
+        ...rest,
+        sourceJobSeekerId: sourceJobSeekerId ?? null,
         userId: session.user.id,
         status: "draft",
         jobTitle: data.jobTitle,

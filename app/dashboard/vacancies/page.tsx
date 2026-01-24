@@ -6,6 +6,7 @@ import { Briefcase } from "lucide-react";
 
 import { Skeleton } from "../../../components/ui/skeleton";
 import { VacanciesTable } from "../../../components/admin/vacancies-table";
+import { AddVacancyDialog } from "../../../components/admin/add-vacancy-dialog";
 
 export default function VacanciesPage() {
   const vacancies = useQuery(api.vacancies.getAllVacancies);
@@ -14,14 +15,17 @@ export default function VacanciesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Briefcase className="h-8 w-8" />
-        <div>
-          <h1 className="text-3xl font-bold">Vacancies</h1>
-          <p className="text-muted-foreground">
-            Review and manage job vacancy submissions
-          </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Briefcase className="h-8 w-8" />
+          <div>
+            <h1 className="text-3xl font-bold">Vacancies</h1>
+            <p className="text-muted-foreground">
+              Review and manage job vacancy submissions
+            </p>
+          </div>
         </div>
+        <AddVacancyDialog />
       </div>
 
       {isLoading ? (

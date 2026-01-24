@@ -15,6 +15,13 @@
       "when": 1733471046709,
       "tag": "0001_solid_black_tom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769280195912,
+      "tag": "0002_secret_firebrand",
+      "breakpoints": true
     }
   ]
 }

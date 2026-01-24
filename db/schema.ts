@@ -110,6 +110,7 @@ export const cvs = pgTable("cvs", {
   formData: jsonb("form_data").$type<Cv>(),
   isAiAssisted: boolean("is_ai_assisted").notNull().default(false),
   jobTitle: text("title").notNull(),
+  sourceJobSeekerId: text("source_job_seeker_id"), // Convex job seeker ID (optional)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at"),
   updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),

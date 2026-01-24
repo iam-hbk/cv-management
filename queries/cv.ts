@@ -4,10 +4,24 @@ import { DraftCV } from "../db/schema";
 
 export const cvKeys = {
   all: ["cvs"] as const,
+  list: () => [...cvKeys.all, "list"] as const,
   drafts: () => [...cvKeys.all, "drafts"] as const,
   draft: (id: string) => [...cvKeys.drafts(), id] as const,
   completed: () => [...cvKeys.all, "completed"] as const,
 };
+
+export function useBuiltCVs() {
+  return useQuery<{ success: boolean; data: unknown[] }>({
+    queryKey: cvKeys.list(),
+    queryFn: async () => {
+      const response = await fetch("/api/cv/list");
+      if (!response.ok) {
+        throw new Error("Failed to fetch CVs");
+      }
+      return response.json();
+    },
+  });
+}
 
 export function useSaveDraftMutation() {
   return useMutation({
@@ -60,4 +74,14 @@ export function useDrafts() {
       return response.json();
     },
   });
+}
+
+// Hook for standalone CVs (not linked to any job seeker)
+export function useStandaloneCVs() {
+  const query = useBuiltCVs();
+  const data = query.data?.data ?? [];
+  const standalone = (
+    data as Array<{ sourceJobSeekerId?: string | null }>
+  ).filter((cv) => cv.sourceJobSeekerId == null || cv.sourceJobSeekerId === "");
+  return { ...query, data: standalone, allData: data };
 }

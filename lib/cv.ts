@@ -30,6 +30,7 @@ export async function getCVs() {
     return {
       id: cv.id,
       jobTitle: cv.jobTitle,
+      sourceJobSeekerId: cv.sourceJobSeekerId ?? null,
       createdAt: cv.createdAt ?? new Date(),
       createdBy: {
         name: cv.user?.name ?? cv.user?.email ?? "unknown",

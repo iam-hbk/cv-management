@@ -11,10 +11,11 @@ export async function GET() {
 
     const cvs = await getCVs();
 
-    // Return only recent CVs (limit to 10 most recent)
-    const recentCVs = cvs
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 10);
+    // Return CVs sorted by date (increase limit for better UX)
+    const sortedCVs = cvs.sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
+    const recentCVs = sortedCVs.slice(0, 100);
 
     return NextResponse.json({
       success: true,

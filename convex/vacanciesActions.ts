@@ -230,6 +230,68 @@ export const submitVacancy = action({
 	},
 });
 
+// --- Admin: Add Vacancy (upload file + insert with status approved, no emails) ---
+
+export const submitVacancyFromAdmin = action({
+	args: {
+		postedBy: v.string(),
+		companyName: v.string(),
+		postedByEmail: v.string(),
+		postedByMobile: v.string(),
+		postedBySource: v.string(),
+		jobNiche: v.string(),
+		jobTitle: v.string(),
+		jobDescription: v.string(),
+		jobRegion: v.string(),
+		workingModel: v.union(
+			v.literal("hybrid"),
+			v.literal("on-site"),
+			v.literal("remote"),
+		),
+		fileBase64: v.string(),
+		fileName: v.string(),
+		contentType: v.string(),
+	},
+	handler: async (ctx, args): Promise<Doc<"vacancies"> | null> => {
+		const fileKey = `vacancies/${args.fileName}`;
+		const buffer = Buffer.from(args.fileBase64, "base64");
+
+		let key: string;
+		try {
+			key = await r2.store(ctx, buffer, {
+				key: fileKey,
+				type: args.contentType,
+			});
+		} catch (e) {
+			console.error(e);
+			throw new Error("Failed to upload vacancy file");
+		}
+
+		const fileUrl = await r2.getUrl(key);
+
+		try {
+			const inserted = await ctx.runMutation(api.vacancies.addVacancy, {
+				postedBy: args.postedBy,
+				companyName: args.companyName,
+				postedByEmail: args.postedByEmail,
+				postedByMobile: args.postedByMobile,
+				postedBySource: args.postedBySource,
+				jobNiche: args.jobNiche,
+				jobTitle: args.jobTitle,
+				jobDescription: args.jobDescription,
+				jobRegion: args.jobRegion,
+				workingModel: args.workingModel,
+				vacancyFilePath: fileUrl,
+				status: "approved",
+			});
+			return inserted;
+		} catch (e) {
+			await r2.deleteObject(ctx, key).catch(() => {});
+			throw e;
+		}
+	},
+});
+
 // --- Vacancy Status Email Action ---
 
 export const sendVacancyStatusEmail = action({

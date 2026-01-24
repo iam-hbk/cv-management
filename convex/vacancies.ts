@@ -72,9 +72,17 @@ export const addVacancy = mutation({
 			v.literal("remote"),
 		),
 		vacancyFilePath: v.string(),
+		status: v.optional(
+			v.union(
+				v.literal("pending"),
+				v.literal("approved"),
+				v.literal("rejected"),
+			),
+		),
 	},
 	handler: async (ctx, args) => {
 		const now = Date.now();
+		const status = args.status ?? "pending";
 		const vacancyId = await ctx.db.insert("vacancies", {
 			postedBy: args.postedBy,
 			companyName: args.companyName,
@@ -87,7 +95,7 @@ export const addVacancy = mutation({
 			jobRegion: args.jobRegion,
 			workingModel: args.workingModel,
 			vacancyFilePath: args.vacancyFilePath,
-			status: "pending",
+			status,
 			createdAt: now,
 			updatedAt: now,
 		});

@@ -1,16 +1,20 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import type { Id } from '@/convex/_generated/dataModel'
 import { Button } from '../../../../../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../../components/ui/card'
 import { Alert, AlertDescription } from '../../../../../components/ui/alert'
 import { Badge } from '../../../../../components/ui/badge'
 import { Separator } from '../../../../../components/ui/separator'
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Sparkles, Link as LinkIcon } from 'lucide-react'
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Sparkles, Link as LinkIcon, User } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Cv } from '../../../../../schemas/cv.schema'
+import { BlobCVsList } from '@/components/cv/blob-cvs-list'
 
 interface ApiResponse {
   success: boolean
@@ -25,6 +29,26 @@ export default function AIExtractPage() {
   const [dragActive, setDragActive] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const blobUrl = searchParams.get('blobUrl')
+  
+  // Job seeker source support
+  const sourceType = searchParams.get('source')
+  const jobSeekerId = searchParams.get('id')
+  const isJobSeekerSource = sourceType === 'job-seeker' && jobSeekerId
+  
+  // Fetch job seeker data if source is job-seeker
+  const jobSeeker = useQuery(
+    api.jobSeekers.getJobSeekerById,
+    isJobSeekerSource ? { id: jobSeekerId as Id<"jobSeekers"> } : 'skip'
+  )
+  
+  // Determine effective blob URL (from query param or job seeker's CV)
+  const effectiveBlobUrl = useMemo(() => {
+    if (blobUrl) return blobUrl
+    if (isJobSeekerSource && jobSeeker?.cvUploadPath) {
+      return jobSeeker.cvUploadPath
+    }
+    return null
+  }, [blobUrl, isJobSeekerSource, jobSeeker?.cvUploadPath])
 
   const extractCVMutation = useMutation({
     mutationFn: async (input: File | string): Promise<ApiResponse> => {
@@ -63,10 +87,10 @@ export default function AIExtractPage() {
   })
 
   const handleExtractFromBlob = useCallback(() => {
-    if (blobUrl) {
-      extractCVMutation.mutate(blobUrl)
+    if (effectiveBlobUrl) {
+      extractCVMutation.mutate(effectiveBlobUrl)
     }
-  }, [blobUrl, extractCVMutation])
+  }, [effectiveBlobUrl, extractCVMutation])
 
   const handleExtractFromFile = useCallback(() => {
     if (selectedFile) {
@@ -88,6 +112,7 @@ export default function AIExtractPage() {
           education: cvData.education,
           skills: cvData.skills,
           isAiAssisted: true,
+          sourceJobSeekerId: isJobSeekerSource ? jobSeekerId : null,
         }),
       })
 
@@ -100,7 +125,7 @@ export default function AIExtractPage() {
     onSuccess: () => {
       toast.success('CV saved successfully!')
       setExtractedData(null)
-      router.push('/dashboard')
+      router.push('/dashboard/curriculum-vitae')
     },
     onError: (error) => {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save CV'
@@ -199,8 +224,40 @@ export default function AIExtractPage() {
           </p>
         </div>
 
-        {/* Blob URL Section */}
-        {blobUrl && !extractedData && !isProcessing && (
+        {/* Job Seeker Source Section */}
+        {isJobSeekerSource && jobSeeker && !extractedData && !isProcessing && (
+          <Card className="border-primary/50 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                CV from Job Seeker: {jobSeeker.firstName} {jobSeeker.lastName}
+              </CardTitle>
+              <CardDescription>
+                Extracting CV for this job seeker. The generated CV will be linked to their profile.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="rounded-lg bg-muted p-3 space-y-1">
+                  <p className="text-sm"><span className="font-medium">Email:</span> {jobSeeker.email}</p>
+                  <p className="text-sm"><span className="font-medium">Phone:</span> {jobSeeker.mobileNumber}</p>
+                </div>
+                <Button 
+                  onClick={handleExtractFromBlob}
+                  className="w-full"
+                  size="lg"
+                  disabled={!effectiveBlobUrl}
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Start AI Extraction
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Blob URL Section (non-job-seeker) */}
+        {effectiveBlobUrl && !isJobSeekerSource && !extractedData && !isProcessing && (
           <Card className="border-primary/50 bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -215,7 +272,7 @@ export default function AIExtractPage() {
               <div className="space-y-4">
                 <div className="rounded-lg bg-muted p-3">
                   <p className="text-xs font-medium text-muted-foreground mb-1">Blob URL:</p>
-                  <p className="text-sm break-all">{blobUrl}</p>
+                  <p className="text-sm break-all">{effectiveBlobUrl}</p>
                 </div>
                 <Button 
                   onClick={handleExtractFromBlob}
@@ -272,8 +329,26 @@ export default function AIExtractPage() {
           </Card>
         )}
 
+        {/* Choose from uploaded CVs - only in initial state */}
+        {!effectiveBlobUrl && !selectedFile && !extractedData && !isJobSeekerSource && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LinkIcon className="h-5 w-5" />
+                Or choose from your uploaded CVs
+              </CardTitle>
+              <CardDescription>
+                Select an existing file to run AI extraction
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BlobCVsList variant="picker" />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Upload Section */}
-        {!blobUrl && !selectedFile && !extractedData && (
+        {!effectiveBlobUrl && !selectedFile && !extractedData && !isJobSeekerSource && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

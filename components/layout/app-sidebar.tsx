@@ -9,6 +9,7 @@ import {
   Briefcase,
   FilePlus,
   Sparkles,
+  BookOpen,
 } from "lucide-react";
 
 import {
@@ -24,8 +25,6 @@ import {
   SidebarMenuItem,
 } from "../ui/sidebar";
 import Image from "next/image";
-import { NavUploadedCVs } from "./nav-uploaded-cvs";
-import { NavRecents } from "./nav-recents";
 
 const adminNavItems = [
   {
@@ -55,6 +54,11 @@ const cvToolsNavItems = [
     title: "AI Extract",
     href: "/dashboard/curriculum-vitae/new/ai-extract",
     icon: Sparkles,
+  },
+  {
+    title: "CV Library",
+    href: "/dashboard/curriculum-vitae",
+    icon: BookOpen,
   },
 ];
 
@@ -111,7 +115,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenu>
               {cvToolsNavItems.map((item) => {
                 const isActive =
-                  pathname === item.href || pathname.startsWith(item.href);
+                  item.href === "/dashboard/curriculum-vitae"
+                    ? pathname === item.href
+                    : pathname === item.href || pathname.startsWith(item.href);
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={isActive}>
@@ -126,8 +132,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <NavUploadedCVs />
-        <NavRecents />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>

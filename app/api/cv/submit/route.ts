@@ -6,6 +6,7 @@ import type { CVFormData } from "../../../../schemas/cv.schema";
 
 interface SubmitCVRequest extends CVFormData {
   isAiAssisted?: boolean;
+  sourceJobSeekerId?: string | null;
 }
 
 export async function POST(request: Request) {
@@ -16,17 +17,22 @@ export async function POST(request: Request) {
     }
 
     const data = (await request.json()) as SubmitCVRequest;
-    const { isAiAssisted = false } = data;
+    const { isAiAssisted = false, sourceJobSeekerId = null, ...formData } = data;
+
+    // Extract job title from personalInfo if available
+    const jobTitle =
+      (formData as CVFormData).personalInfo?.profession ?? "";
 
     const cv = await db
       .insert(cvs)
       .values({
-        jobTitle: "", // TODO: Add jobTitle
-        isAiAssisted: isAiAssisted,
+        jobTitle: jobTitle || "",
+        isAiAssisted,
+        sourceJobSeekerId: sourceJobSeekerId ?? null,
         userId: session.user.id,
         updatedBy: session.user.id,
         status: "completed",
-        formData: data,
+        formData: formData as CVFormData,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
