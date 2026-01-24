@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { Suspense, useState, useCallback, useMemo } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from 'convex/react'
@@ -22,7 +22,7 @@ interface ApiResponse {
   error?: string
 }
 
-export default function AIExtractPage() {
+function AIExtractPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [extractedData, setExtractedData] = useState<Cv | null>(null)
@@ -645,5 +645,22 @@ export default function AIExtractPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function AIExtractPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto py-8 px-4">
+          <div className="max-w-4xl mx-auto flex flex-col items-center justify-center gap-4 py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <AIExtractPageContent />
+    </Suspense>
   )
 }

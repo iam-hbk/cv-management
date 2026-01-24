@@ -41,7 +41,7 @@ import { Plus } from "lucide-react";
 const schema = z.object({
   postedBy: z.string().min(1, "Posted by is required"),
   companyName: z.string().min(1, "Company name is required"),
-  postedByEmail: z.string().email("Invalid email"),
+  postedByEmail: z.email("Invalid email"),
   postedByMobile: z.string().min(1, "Contact number is required"),
   postedBySource: z.string().min(1, "Source is required"),
   jobNiche: z.string().min(1, "Niche is required"),

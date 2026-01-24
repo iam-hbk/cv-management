@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { FieldErrors } from "react-hook-form";
 import { Alert, AlertDescription } from "../ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -13,8 +14,8 @@ type ErrorWithMessage = {
 };
 
 export default function FormErrors({ errors }: { errors: FieldErrors }) {
-  const renderErrors = (error: ErrorWithMessage, path: string = ''): JSX.Element[] => {
-    const elements: JSX.Element[] = [];
+  const renderErrors = (error: ErrorWithMessage, path: string = ''): ReactElement[] => {
+    const elements: ReactElement[] = [];
 
     if (error.message && typeof error.message === 'string') {
       elements.push(

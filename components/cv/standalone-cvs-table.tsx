@@ -38,24 +38,25 @@ export function StandaloneCVsTable() {
 
   const rows: StandaloneCVRow[] = useMemo(
     () =>
-      (data ?? []).map(
-        (cv: {
-          id: string;
-          jobTitle: string;
-          status: string;
-          createdAt: Date | string;
-          createdBy?: { name?: string; email?: string };
-        }) => ({
-          id: cv.id,
-          jobTitle: cv.jobTitle,
-          status: cv.status ?? "draft",
-          createdAt:
-            cv.createdAt instanceof Date
-              ? cv.createdAt
-              : new Date(cv.createdAt),
-          createdBy: cv.createdBy ?? { name: "-", email: "" },
-        })
-      ),
+      ((data ?? []) as Array<{
+        id: string;
+        jobTitle: string;
+        status: string;
+        createdAt: Date | string;
+        createdBy?: { name?: string; email?: string };
+      }>).map((cv) => ({
+        id: cv.id,
+        jobTitle: cv.jobTitle,
+        status: cv.status ?? "draft",
+        createdAt:
+          cv.createdAt instanceof Date
+            ? cv.createdAt
+            : new Date(cv.createdAt),
+        createdBy: {
+          name: cv.createdBy?.name ?? "-",
+          email: cv.createdBy?.email ?? "",
+        },
+      })),
     [data]
   );
 
