@@ -3,7 +3,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Briefcase } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  FilePlus,
+  Sparkles,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -18,6 +24,8 @@ import {
   SidebarMenuItem,
 } from "../ui/sidebar";
 import Image from "next/image";
+import { NavUploadedCVs } from "./nav-uploaded-cvs";
+import { NavRecents } from "./nav-recents";
 
 const adminNavItems = [
   {
@@ -34,6 +42,19 @@ const adminNavItems = [
     title: "Vacancies",
     href: "/dashboard/vacancies",
     icon: Briefcase,
+  },
+];
+
+const cvToolsNavItems = [
+  {
+    title: "Create New CV",
+    href: "/dashboard/curriculum-vitae/new",
+    icon: FilePlus,
+  },
+  {
+    title: "AI Extract",
+    href: "/dashboard/curriculum-vitae/new/ai-extract",
+    icon: Sparkles,
   },
 ];
 
@@ -84,6 +105,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>CV Tools</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {cvToolsNavItems.map((item) => {
+                const isActive =
+                  pathname === item.href || pathname.startsWith(item.href);
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link href={item.href}>
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <NavUploadedCVs />
+        <NavRecents />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>
