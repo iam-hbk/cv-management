@@ -5,38 +5,38 @@ import { cn } from "../lib/utils";
 import Providers from "@/providers";
 
 const fontSans = FontSans({
-  subsets: ["latin"],
-  variable: "--font-sans",
+	subsets: ["latin"],
+	variable: "--font-sans",
 });
 
 const fontGreatVibes = Great_Vibes({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-great-vibes",
+	subsets: ["latin"],
+	weight: ["400"],
+	variable: "--font-great-vibes",
 });
 
 export const metadata: Metadata = {
-  title: "CV Builder",
-  description: "Build your CV with ease",
+	title: "CV Builder",
+	description: "Build your CV with ease",
 };
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <head />
-      <body
-        className={cn(
-          "min-h-screen font-sans antialiased",
-          fontSans.variable,
-          fontGreatVibes.variable
-        )}
-      >
-        <Providers>{children}</Providers>
-      </body>
-    </html>
-  );
+	return (
+		<html lang="en">
+			<head />
+			<body
+				className={cn(
+					"min-h-screen font-sans antialiased",
+					fontSans.variable,
+					fontGreatVibes.variable
+				)}
+			>
+				<Providers>{children}</Providers>
+			</body>
+		</html>
+	);
 }

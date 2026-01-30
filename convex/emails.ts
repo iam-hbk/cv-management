@@ -4,11 +4,7 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { Resend } from "resend";
 
-function contactUsAdminEmailHtml(
-	name: string,
-	email: string,
-	message: string,
-): string {
+function contactUsAdminEmailHtml(name: string, email: string, message: string): string {
 	return `
 <div style="display: flex; flex-direction: column; width: 100%; align-items: center; gap: 3;">
 	<h1 style="font-size: 18px;">A Visitor of the Into-Being Website sent an Email</h1>
@@ -28,8 +24,7 @@ export const sendContactEmail = action({
 		message: v.string(),
 	},
 	handler: async (_ctx, args) => {
-		const name =
-			args.name.charAt(0).toUpperCase() + args.name.toLowerCase().slice(1);
+		const name = args.name.charAt(0).toUpperCase() + args.name.toLowerCase().slice(1);
 		const email = args.email.toLowerCase();
 
 		const apiKey = process.env.RESEND_API_KEY;

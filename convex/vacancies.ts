@@ -28,11 +28,7 @@ export const getVacancyById = query({
 
 export const getVacanciesByStatus = query({
 	args: {
-		status: v.union(
-			v.literal("pending"),
-			v.literal("approved"),
-			v.literal("rejected")
-		),
+		status: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
 	},
 	handler: async (ctx, args) => {
 		return await ctx.db
@@ -66,19 +62,9 @@ export const addVacancy = mutation({
 		jobTitle: v.string(),
 		jobDescription: v.string(),
 		jobRegion: v.string(),
-		workingModel: v.union(
-			v.literal("hybrid"),
-			v.literal("on-site"),
-			v.literal("remote"),
-		),
+		workingModel: v.union(v.literal("hybrid"), v.literal("on-site"), v.literal("remote")),
 		vacancyFilePath: v.string(),
-		status: v.optional(
-			v.union(
-				v.literal("pending"),
-				v.literal("approved"),
-				v.literal("rejected"),
-			),
-		),
+		status: v.optional(v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected"))),
 	},
 	handler: async (ctx, args) => {
 		const now = Date.now();
@@ -131,11 +117,7 @@ export const updateVacancy = mutation({
 		jobDescription: v.optional(v.string()),
 		jobRegion: v.optional(v.string()),
 		workingModel: v.optional(
-			v.union(
-				v.literal("hybrid"),
-				v.literal("on-site"),
-				v.literal("remote"),
-			)
+			v.union(v.literal("hybrid"), v.literal("on-site"), v.literal("remote"))
 		),
 		vacancyFilePath: v.optional(v.string()),
 	},

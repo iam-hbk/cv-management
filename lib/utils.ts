@@ -1,8 +1,8 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+	return twMerge(clsx(inputs));
 }
 
 export const CV_EXTRACTION_PROMPT = `You are a precise information-extraction model. You will receive a single PDF file upload containing one candidate's CV/resume. Your job is to read the PDF (including scanned pages via OCR), interpret layout (columns, tables, headers/footers), and return a SINGLE JSON object that validates against the \`cvSchema\` defined below.

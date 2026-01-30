@@ -18,10 +18,25 @@ function jobSeekerAdminEmailHtml(props: {
 	currentSalaryRate: string;
 	nationality: string;
 	downloadLink: string;
+	vacancy?: {
+		jobTitle: string;
+		companyName: string;
+	};
 }): string {
+	const vacancyInfo = props.vacancy
+		? `
+		<div style="background-color: #f0f0f0; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff;">
+			<strong>Applied for Position:</strong><br/>
+			Job Title: ${props.vacancy.jobTitle}<br/>
+			Company: ${props.vacancy.companyName}
+		</div>
+		`
+		: "";
+
 	return `
 <div>
 	<h1 style="font-size: 18px;">A Job Seeker has submitted their CV</h1>
+	${vacancyInfo}
 	<div style="padding: 10px;">
 		<div>Full Name : ${props.firstName} ${props.lastName}</div>
 		<div>Email : ${props.email}</div>
@@ -45,25 +60,34 @@ async function sendJobSeekerConfirmationEmails(props: {
 	currentSalaryRate: string;
 	nationality: string;
 	downloadLink: string;
+	vacancy?: {
+		jobTitle: string;
+		companyName: string;
+	};
 }): Promise<void> {
 	const apiKey = process.env.RESEND_API_KEY;
 	if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
 	const resend = new Resend(apiKey);
 
+	const subject = props.vacancy
+		? `New Application for ${props.vacancy.jobTitle} at ${props.vacancy.companyName}`
+		: "New CV Uploaded on Intobeing Placements";
+
 	const toAdmin = await resend.emails.send({
 		from: "Intobeing <info@intobeingplacements.co.za>",
 		to: ["terry@intobeingplacements.co.za", "nexusthestaff@gmail.com"],
-		subject: "New CV Uploaded on Intobeing Placements",
+		subject,
 		html: jobSeekerAdminEmailHtml(props),
 	});
 	if (toAdmin.error) throw toAdmin.error;
 
 	const firstName = props.firstName;
+	const vacancyText = props.vacancy ? ` for the position of ${props.vacancy.jobTitle}` : "";
 	const confirm = await resend.emails.send({
 		from: "Intobeing <info@intobeingplacements.co.za>",
 		to: [props.email],
-		subject: "Into-Being Placements",
-		text: `Hello ${firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()},\n\nThank you for reaching out to us. We have received your CV and will get back to you as soon as possible.\n\nBest Regards,\nInto-Being Placements`,
+		subject: "Into-Being Placements - Application Received",
+		text: `Hello ${firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()},\n\nThank you for applying${vacancyText}. We have received your CV and will get back to you as soon as possible.\n\nBest Regards,\nIntobeing Placements`,
 	});
 	if (confirm.error) throw confirm.error;
 }
@@ -84,10 +108,22 @@ export const submitCV = action({
 		fileBase64: v.string(),
 		fileName: v.string(),
 		contentType: v.string(),
+		vacancyId: v.optional(v.id("vacancies")),
 	},
 	handler: async (ctx, args) => {
 		const fileKey = `CVs/${args.fileName}`;
 		const buffer = Buffer.from(args.fileBase64, "base64");
+
+		// Fetch vacancy details if vacancyId is provided
+		let vacancy: Doc<"vacancies"> | null = null;
+		if (args.vacancyId) {
+			vacancy = await ctx.runQuery(api.vacancies.getVacancyById, {
+				id: args.vacancyId,
+			});
+			if (!vacancy) {
+				throw new Error("Vacancy not found");
+			}
+		}
 
 		// 1. Upload file to R2 using @convex-dev/r2
 		let key: string;
@@ -130,7 +166,21 @@ export const submitCV = action({
 			throw new Error("Failed to save job seeker information");
 		}
 
-		// 3. Send confirmation emails
+		// 3. Create application record if vacancyId is provided
+		if (args.vacancyId && vacancy) {
+			try {
+				await ctx.runMutation(api.applications.addApplication, {
+					vacancyId: args.vacancyId,
+					jobSeekerId: inserted._id,
+					status: "pending",
+				});
+			} catch (e) {
+				console.error("Failed to create application record:", e);
+				// Don't throw here - the CV was still submitted successfully
+			}
+		}
+
+		// 4. Send confirmation emails
 		await sendJobSeekerConfirmationEmails({
 			firstName: inserted.firstName,
 			lastName: inserted.lastName,
@@ -140,8 +190,18 @@ export const submitCV = action({
 			currentSalaryRate: inserted.currentSalaryRate,
 			nationality: inserted.nationality,
 			downloadLink: fileUrl,
+			vacancy: vacancy
+				? {
+						jobTitle: vacancy.jobTitle,
+						companyName: vacancy.companyName,
+					}
+				: undefined,
 		});
 
-		return { message: "Your CV has been submitted successfully" };
+		return {
+			message: args.vacancyId
+				? "Your application has been submitted successfully"
+				: "Your CV has been submitted successfully",
+		};
 	},
 });

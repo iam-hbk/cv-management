@@ -44,8 +44,7 @@ function vacancyAdminEmailHtml(props: {
 }
 
 function vacancyConfirmationHtml(firstName: string): string {
-	const n =
-		firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+	const n = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 	return `
 <div>
 	<h1>Hello ${n},</h1>
@@ -60,9 +59,7 @@ function vacancyApprovedHtml(props: {
 	jobTitle: string;
 	companyName: string;
 }): string {
-	const n =
-		props.firstName.charAt(0).toUpperCase() +
-		props.firstName.slice(1).toLowerCase();
+	const n = props.firstName.charAt(0).toUpperCase() + props.firstName.slice(1).toLowerCase();
 	return `
 <div>
 	<h1>Hello ${n},</h1>
@@ -82,9 +79,7 @@ function vacancyRejectedHtml(props: {
 	jobTitle: string;
 	companyName: string;
 }): string {
-	const n =
-		props.firstName.charAt(0).toUpperCase() +
-		props.firstName.slice(1).toLowerCase();
+	const n = props.firstName.charAt(0).toUpperCase() + props.firstName.slice(1).toLowerCase();
 	return `
 <div>
 	<h1>Hello ${n},</h1>
@@ -148,11 +143,7 @@ export const submitVacancy = action({
 		vacancyDetails: v.string(),
 		region: v.string(),
 		otherRegion: v.optional(v.string()),
-		workModel: v.union(
-			v.literal("hybrid"),
-			v.literal("on-site"),
-			v.literal("remote"),
-		),
+		workModel: v.union(v.literal("hybrid"), v.literal("on-site"), v.literal("remote")),
 		fileBase64: v.string(),
 		fileName: v.string(),
 		contentType: v.string(),
@@ -181,8 +172,7 @@ export const submitVacancy = action({
 			args.heardAboutUs === "other"
 				? args.otherHeardAboutUs || args.heardAboutUs
 				: args.heardAboutUs;
-		const region =
-			args.region === "other" ? args.otherRegion || args.region : args.region;
+		const region = args.region === "other" ? args.otherRegion || args.region : args.region;
 
 		// 2. Save to Convex database
 		let inserted: Doc<"vacancies"> | null;
@@ -243,11 +233,7 @@ export const submitVacancyFromAdmin = action({
 		jobTitle: v.string(),
 		jobDescription: v.string(),
 		jobRegion: v.string(),
-		workingModel: v.union(
-			v.literal("hybrid"),
-			v.literal("on-site"),
-			v.literal("remote"),
-		),
+		workingModel: v.union(v.literal("hybrid"), v.literal("on-site"), v.literal("remote")),
 		fileBase64: v.string(),
 		fileName: v.string(),
 		contentType: v.string(),

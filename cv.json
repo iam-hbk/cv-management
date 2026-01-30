@@ -1,111 +1,111 @@
 {
-    "skills": {
-        "otherSkills": [
-            "Generally Accepted Accounting Principles (GAAP)",
-            "International Financial Reporting Standards (IFRS)",
-            "Teamwork",
-            "Time Management",
-            "Leadership",
-            "Effective Communication",
-            "Critical Thinking"
-        ],
-        "skillsMatrix": [],
-        "computerSkills": [
-            "Microsoft Office Suite (Excel, Powerpoint, Word)",
-            "General Accounting Software (SAGE)"
-        ]
-    },
-    "education": {
-        "educations": [
-            {
-                "completed": false,
-                "institution": "IIE Varsity College Capetown",
-                "qualification": "Bcom in Finance and Accounting",
-                "completionDate": 2023
-            },
-            {
-                "completed": true,
-                "institution": "IIE Varsity College Capetown",
-                "qualification": "Higher Certificate Business Principles & Practices",
-                "completionDate": 2022
-            },
-            {
-                "completed": false,
-                "institution": "IIE Varsity College Capetown",
-                "qualification": "Bcom in Finance and Accounting",
-                "completionDate": 2023
-            },
-            {
-                "completed": true,
-                "institution": "IIE Varsity College Capetown",
-                "qualification": "Higher Certificate Business Principles & Practices",
-                "completionDate": 2022
-            }
-        ]
-    },
-    "workHistory": {
-        "experiences": [
-            {
-                "duties": [
-                    "Gained hands-on experience at DGDA (Direction Générale des Douanes et Accises) performing support services, verification follow-up, and service brigade duties.",
-                    "Managing customs operations, ensuring compliance with declarations, and overseeing warehouse operations.",
-                    "Providing practical exposure to international trade and customs procedures."
-                ],
-                "company": "AMICONGO (EPC) Concession Publique des entrepôts",
-                "current": false,
-                "position": "Internship - DRC",
-                "startDate": "2019",
-                "reasonForLeaving": "Internship Completion"
-            },
-            {
-                "duties": [
-                    "Gained valuable exposure to financial operations at GECAMINES, a major mining corporation, through hands-on experience with financial statements and industry-specific reporting procedures.",
-                    "Assisted with basic accounting procedures while developing practical understanding of financial reporting in the mining sector."
-                ],
-                "company": "GECAMINES",
-                "current": false,
-                "position": "Internship - DRC",
-                "startDate": "2020",
-                "reasonForLeaving": "Internship Completion"
-            },
-            {
-                "duties": [
-                    "Gained hands-on experience at DGDA (Direction Générale des Douanes et Accises) performing support services, verification follow-up, and service brigade duties.",
-                    "This involved managing customs operations, ensuring compliance with declarations, and overseeing warehouse operations, providing practical exposure to international trade and customs procedures."
-                ],
-                "company": "AMICONGO (EPC) Concession Publique des entrepôts",
-                "current": false,
-                "position": "Internship - DRC",
-                "startDate": "2019",
-                "reasonForLeaving": "Internship Completion"
-            },
-            {
-                "duties": [
-                    "Gained valuable exposure to financial operations at GECAMINES, a major mining corporation, through hands-on experience with financial statements and industry-specific reporting procedures.",
-                    "Assisted with basic accounting procedures while developing practical understanding of financial reporting in the mining sector."
-                ],
-                "company": "GECAMINES",
-                "current": false,
-                "position": "Internship - DRC",
-                "startDate": "2020",
-                "reasonForLeaving": "Internship Completion"
-            }
-        ]
-    },
-    "personalInfo": {
-        "email": "zoemambuya@gmail.com",
-        "phone": "+27 691023902",
-        "gender": "female",
-        "idNumber": "N/A",
-        "lastName": "Mukadi",
-        "location": "Capetown",
-        "firstName": "Zoe",
-        "profession": "Aspiring Accountant & Financial Analyst",
-        "nationality": "South African",
-        "availability": "available",
-        "currentSalary": 0,
-        "driversLicense": false,
-        "expectedSalary": 0
-    },
-    "executiveSummary": ""
+	"skills": {
+		"otherSkills": [
+			"Generally Accepted Accounting Principles (GAAP)",
+			"International Financial Reporting Standards (IFRS)",
+			"Teamwork",
+			"Time Management",
+			"Leadership",
+			"Effective Communication",
+			"Critical Thinking"
+		],
+		"skillsMatrix": [],
+		"computerSkills": [
+			"Microsoft Office Suite (Excel, Powerpoint, Word)",
+			"General Accounting Software (SAGE)"
+		]
+	},
+	"education": {
+		"educations": [
+			{
+				"completed": false,
+				"institution": "IIE Varsity College Capetown",
+				"qualification": "Bcom in Finance and Accounting",
+				"completionDate": 2023
+			},
+			{
+				"completed": true,
+				"institution": "IIE Varsity College Capetown",
+				"qualification": "Higher Certificate Business Principles & Practices",
+				"completionDate": 2022
+			},
+			{
+				"completed": false,
+				"institution": "IIE Varsity College Capetown",
+				"qualification": "Bcom in Finance and Accounting",
+				"completionDate": 2023
+			},
+			{
+				"completed": true,
+				"institution": "IIE Varsity College Capetown",
+				"qualification": "Higher Certificate Business Principles & Practices",
+				"completionDate": 2022
+			}
+		]
+	},
+	"workHistory": {
+		"experiences": [
+			{
+				"duties": [
+					"Gained hands-on experience at DGDA (Direction Générale des Douanes et Accises) performing support services, verification follow-up, and service brigade duties.",
+					"Managing customs operations, ensuring compliance with declarations, and overseeing warehouse operations.",
+					"Providing practical exposure to international trade and customs procedures."
+				],
+				"company": "AMICONGO (EPC) Concession Publique des entrepôts",
+				"current": false,
+				"position": "Internship - DRC",
+				"startDate": "2019",
+				"reasonForLeaving": "Internship Completion"
+			},
+			{
+				"duties": [
+					"Gained valuable exposure to financial operations at GECAMINES, a major mining corporation, through hands-on experience with financial statements and industry-specific reporting procedures.",
+					"Assisted with basic accounting procedures while developing practical understanding of financial reporting in the mining sector."
+				],
+				"company": "GECAMINES",
+				"current": false,
+				"position": "Internship - DRC",
+				"startDate": "2020",
+				"reasonForLeaving": "Internship Completion"
+			},
+			{
+				"duties": [
+					"Gained hands-on experience at DGDA (Direction Générale des Douanes et Accises) performing support services, verification follow-up, and service brigade duties.",
+					"This involved managing customs operations, ensuring compliance with declarations, and overseeing warehouse operations, providing practical exposure to international trade and customs procedures."
+				],
+				"company": "AMICONGO (EPC) Concession Publique des entrepôts",
+				"current": false,
+				"position": "Internship - DRC",
+				"startDate": "2019",
+				"reasonForLeaving": "Internship Completion"
+			},
+			{
+				"duties": [
+					"Gained valuable exposure to financial operations at GECAMINES, a major mining corporation, through hands-on experience with financial statements and industry-specific reporting procedures.",
+					"Assisted with basic accounting procedures while developing practical understanding of financial reporting in the mining sector."
+				],
+				"company": "GECAMINES",
+				"current": false,
+				"position": "Internship - DRC",
+				"startDate": "2020",
+				"reasonForLeaving": "Internship Completion"
+			}
+		]
+	},
+	"personalInfo": {
+		"email": "zoemambuya@gmail.com",
+		"phone": "+27 691023902",
+		"gender": "female",
+		"idNumber": "N/A",
+		"lastName": "Mukadi",
+		"location": "Capetown",
+		"firstName": "Zoe",
+		"profession": "Aspiring Accountant & Financial Analyst",
+		"nationality": "South African",
+		"availability": "available",
+		"currentSalary": 0,
+		"driversLicense": false,
+		"expectedSalary": 0
+	},
+	"executiveSummary": ""
 }

@@ -4,19 +4,19 @@ import { SidebarInset, SidebarProvider } from "../../components/ui/sidebar";
 import { SessionProvider } from "next-auth/react";
 
 export default function Layout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-  return (
-    <SessionProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <BreadcrumbHeader />
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
-        </SidebarInset>
-      </SidebarProvider>
-    </SessionProvider>
-  );
+	return (
+		<SessionProvider>
+			<SidebarProvider>
+				<AppSidebar />
+				<SidebarInset>
+					<BreadcrumbHeader />
+					<div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
+				</SidebarInset>
+			</SidebarProvider>
+		</SessionProvider>
+	);
 }
