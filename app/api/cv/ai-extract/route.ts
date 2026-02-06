@@ -1,10 +1,17 @@
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
+import { type NextRequest, NextResponse } from "next/server";
+import { isAuthenticated } from "../../../../lib/auth-server";
 import { cvSchemaLenient } from "../../../../schemas/cv.schema";
-import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
 	try {
+		// Verify authentication
+		const session = await isAuthenticated();
+		if (!session) {
+			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		}
+
 		const formData = await request.formData();
 		const file = formData.get("pdf") as File | null;
 		const blobUrl = formData.get("blobUrl") as string | null;
@@ -87,8 +94,11 @@ export async function POST(request: NextRequest) {
               - If only a year is available, use January 1st of that year (e.g., "2015-01-01")
               - If no date information is available, use an empty string ""
               
+              For availability:
+              - MUST be one of these exact values: "Immediate", "1 Week", "2 Weeks", "1 Month", "2 Months", "3 Months", "Negotiable"
+              - If not specified in the CV, default to "Negotiable"
+              
               For other fields:
-              - availability: Use "Not specified" if not available, never use empty string or "N/A"
               - reasonForLeaving: Use empty string "" if not available, never use "N/A"
               - duties: Use empty array [] if no duties are listed
               - For salary and numeric fields, use numbers (0 if not available)

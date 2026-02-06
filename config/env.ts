@@ -6,13 +6,9 @@ if (typeof window !== "undefined") {
 }
 
 const envSchema = z.object({
-	DATABASE_URL: z.string(),
-	BLOB_READ_WRITE_TOKEN: z.string().optional(),
 	NEXT_PUBLIC_CV_GENERATION_API_URL: z.string().url().optional(),
 });
 
 export const env = envSchema.parse({
-	DATABASE_URL: process.env.DATABASE_URL,
-	BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
 	NEXT_PUBLIC_CV_GENERATION_API_URL: process.env.NEXT_PUBLIC_CV_GENERATION_API_URL,
 });

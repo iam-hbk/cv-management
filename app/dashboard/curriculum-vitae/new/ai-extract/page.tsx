@@ -1,11 +1,26 @@
 "use client";
 
-import { Suspense, useState, useCallback, useMemo } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useCreateAndSubmitCV } from "@/queries/cv";
+import { useMutation } from "@tanstack/react-query";
+import { useAction, useQuery } from "convex/react";
+import {
+	AlertCircle,
+	CheckCircle,
+	FileOutput,
+	FileText,
+	Loader2,
+	Palette,
+	Sparkles,
+	Upload,
+	User,
+} from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "../../../../../components/ui/alert";
+import { Badge } from "../../../../../components/ui/badge";
 import { Button } from "../../../../../components/ui/button";
 import {
 	Card,
@@ -14,22 +29,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../../../../../components/ui/card";
-import { Alert, AlertDescription } from "../../../../../components/ui/alert";
-import { Badge } from "../../../../../components/ui/badge";
 import { Separator } from "../../../../../components/ui/separator";
-import {
-	Upload,
-	FileText,
-	CheckCircle,
-	AlertCircle,
-	Loader2,
-	Sparkles,
-	Link as LinkIcon,
-	User,
-} from "lucide-react";
-import { toast } from "sonner";
 import type { Cv } from "../../../../../schemas/cv.schema";
-import { BlobCVsList } from "@/components/cv/blob-cvs-list";
 
 interface ApiResponse {
 	success: boolean;
@@ -43,34 +44,72 @@ function AIExtractPageContent() {
 	const [extractedData, setExtractedData] = useState<Cv | null>(null);
 	const [dragActive, setDragActive] = useState(false);
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
-	const blobUrl = searchParams.get("blobUrl");
 
 	// Job seeker source support
 	const sourceType = searchParams.get("source");
 	const jobSeekerId = searchParams.get("id");
 	const isJobSeekerSource = sourceType === "job-seeker" && jobSeekerId;
 
-	// Fetch job seeker data if source is job-seeker
+	// Mode support: 'extract' (default), 'branding', 'extract-branding'
+	const mode = searchParams.get("mode") || "extract";
+	const isBrandingMode = mode === "branding";
+	const isExtractBrandingMode = mode === "extract-branding";
+
+	// Fetch job seeker data if source is job-seeker (for display purposes)
 	const jobSeeker = useQuery(
 		api.jobSeekers.getJobSeekerById,
 		isJobSeekerSource ? { id: jobSeekerId as Id<"jobSeekers"> } : "skip"
 	);
 
-	// Determine effective blob URL (from query param or job seeker's CV)
-	const effectiveBlobUrl = useMemo(() => {
-		if (blobUrl) return blobUrl;
-		if (isJobSeekerSource && jobSeeker?.cvUploadPath) {
-			return jobSeeker.cvUploadPath;
-		}
-		return null;
-	}, [blobUrl, isJobSeekerSource, jobSeeker?.cvUploadPath]);
+	// Action to get fresh CV URL
+	const getFreshCvUrl = useAction(api.jobSeekersActions.getFreshCvUrl);
 
+	// State for fresh CV URL and loading
+	const [freshCvUrl, setFreshCvUrl] = useState<string | null>(null);
+	const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+	const [urlError, setUrlError] = useState<string | null>(null);
+
+	// Fetch fresh CV URL when job seeker is loaded
+	useEffect(() => {
+		if (isJobSeekerSource && jobSeeker && !freshCvUrl && !isFetchingUrl && !urlError) {
+			setIsFetchingUrl(true);
+			getFreshCvUrl({ jobSeekerId: jobSeekerId as Id<"jobSeekers"> })
+				.then((result) => {
+					setFreshCvUrl(result.url);
+					setUrlError(null);
+				})
+				.catch((error) => {
+					console.error("Failed to get fresh CV URL:", error);
+					setUrlError(error instanceof Error ? error.message : "Failed to get CV URL");
+				})
+				.finally(() => {
+					setIsFetchingUrl(false);
+				});
+		}
+	}, [
+		isJobSeekerSource,
+		jobSeeker,
+		jobSeekerId,
+		getFreshCvUrl,
+		freshCvUrl,
+		isFetchingUrl,
+		urlError,
+	]);
+
+	// Convex mutation for saving CVs
+	const createAndSubmit = useCreateAndSubmitCV();
+
+	// Local state for tracking save operations
+	const [isSavingCV, setIsSavingCV] = useState(false);
+	const [isSavingAndGenerating, setIsSavingAndGenerating] = useState(false);
+
+	// Extract CV mutation (calls AI extract API)
 	const extractCVMutation = useMutation({
 		mutationFn: async (input: File | string): Promise<ApiResponse> => {
 			const formData = new FormData();
 
 			if (typeof input === "string") {
-				// Handle blob URL
+				// Handle URL (job seeker's CV URL)
 				formData.append("blobUrl", input);
 			} else {
 				// Handle file upload
@@ -92,7 +131,7 @@ function AIExtractPageContent() {
 		},
 		onSuccess: (data) => {
 			setExtractedData(data.data);
-			setSelectedFile(null); // Clear selected file after successful extraction
+			setSelectedFile(null);
 			toast.success("CV extracted successfully!");
 		},
 		onError: (error) => {
@@ -101,11 +140,11 @@ function AIExtractPageContent() {
 		},
 	});
 
-	const handleExtractFromBlob = useCallback(() => {
-		if (effectiveBlobUrl) {
-			extractCVMutation.mutate(effectiveBlobUrl);
+	const handleExtractFromUrl = useCallback(() => {
+		if (freshCvUrl) {
+			extractCVMutation.mutate(freshCvUrl);
 		}
-	}, [effectiveBlobUrl, extractCVMutation]);
+	}, [freshCvUrl, extractCVMutation]);
 
 	const handleExtractFromFile = useCallback(() => {
 		if (selectedFile) {
@@ -113,37 +152,55 @@ function AIExtractPageContent() {
 		}
 	}, [selectedFile, extractCVMutation]);
 
-	const saveCVDirectMutation = useMutation({
+	// Generate branded CV document mutation
+	const generateBrandedCVMutation = useMutation({
 		mutationFn: async (cvData: Cv) => {
-			const response = await fetch("/api/cv/submit", {
+			const response = await fetch("/api/cv/generate", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
 					executiveSummary: cvData.executiveSummary,
+					jobTitle: cvData.personalInfo.profession || "Professional",
 					personalInfo: cvData.personalInfo,
 					workHistory: cvData.workHistory,
 					education: cvData.education,
 					skills: cvData.skills,
-					isAiAssisted: true,
-					sourceJobSeekerId: isJobSeekerSource ? jobSeekerId : null,
 				}),
 			});
 
 			if (!response.ok) {
-				throw new Error("Failed to save CV");
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.error || "Failed to generate branded CV");
 			}
 
-			return response.json();
+			// Get the blob and download it
+			const blob = await response.blob();
+			const contentDisposition = response.headers.get("content-disposition");
+			let filename = "CV.docx";
+			if (contentDisposition) {
+				const match = contentDisposition.match(/filename="?([^"]+)"?/);
+				if (match) filename = match[1];
+			}
+
+			// Create download link
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			window.URL.revokeObjectURL(url);
+			document.body.removeChild(a);
+
+			return { filename };
 		},
-		onSuccess: () => {
-			toast.success("CV saved successfully!");
-			setExtractedData(null);
-			router.push("/dashboard/curriculum-vitae");
+		onSuccess: ({ filename }) => {
+			toast.success(`Branded CV downloaded: ${filename}`);
 		},
 		onError: (error) => {
-			const errorMessage = error instanceof Error ? error.message : "Failed to save CV";
+			const errorMessage = error instanceof Error ? error.message : "Failed to generate branded CV";
 			toast.error(errorMessage);
 		},
 	});
@@ -170,7 +227,7 @@ function AIExtractPageContent() {
 
 		// Store the file instead of immediately processing
 		setSelectedFile(file);
-		setExtractedData(null); // Clear any previous extraction
+		setExtractedData(null);
 	}, []);
 
 	const handleDrag = useCallback((e: React.DragEvent) => {
@@ -189,7 +246,7 @@ function AIExtractPageContent() {
 			e.stopPropagation();
 			setDragActive(false);
 
-			if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+			if (e.dataTransfer.files?.[0]) {
 				handleFileSelect(e.dataTransfer.files[0]);
 			}
 		},
@@ -198,18 +255,18 @@ function AIExtractPageContent() {
 
 	const handleFileInput = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
-			if (e.target.files && e.target.files[0]) {
+			if (e.target.files?.[0]) {
 				handleFileSelect(e.target.files[0]);
 			}
 		},
 		[handleFileSelect]
 	);
 
-	const handleSaveCV = useCallback(() => {
+	// Continue to Edit - stores in sessionStorage and redirects to form wizard
+	const handleContinueToEdit = useCallback(() => {
 		if (!extractedData) return;
 
 		try {
-			// Store in sessionStorage for the edit page
 			sessionStorage.setItem("aiExtractedCV", JSON.stringify(extractedData));
 			router.push("/dashboard/curriculum-vitae/new");
 		} catch {
@@ -217,22 +274,149 @@ function AIExtractPageContent() {
 		}
 	}, [extractedData, router]);
 
-	const handleSaveCVDirectly = useCallback(() => {
+	// Save CV directly using Convex
+	const handleSaveCVDirectly = useCallback(async () => {
 		if (!extractedData) return;
-		saveCVDirectMutation.mutate(extractedData);
-	}, [extractedData, saveCVDirectMutation]);
+
+		setIsSavingCV(true);
+		try {
+			await createAndSubmit({
+				jobTitle: extractedData.personalInfo.profession || "Professional",
+				formData: {
+					executiveSummary: extractedData.executiveSummary,
+					personalInfo: extractedData.personalInfo,
+					workHistory: extractedData.workHistory,
+					education: extractedData.education,
+					skills: extractedData.skills,
+				},
+				isAiAssisted: true,
+				sourceJobSeekerId: isJobSeekerSource ? (jobSeekerId ?? undefined) : undefined,
+			});
+			toast.success("CV saved successfully!");
+			setExtractedData(null);
+			router.push("/dashboard/curriculum-vitae");
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : "Failed to save CV";
+			toast.error(errorMessage);
+		} finally {
+			setIsSavingCV(false);
+		}
+	}, [extractedData, createAndSubmit, isJobSeekerSource, jobSeekerId, router]);
+
+	// Generate branded CV only (download without saving)
+	const handleGenerateBrandedCV = useCallback(() => {
+		if (!extractedData) return;
+		generateBrandedCVMutation.mutate(extractedData);
+	}, [extractedData, generateBrandedCVMutation]);
+
+	// Save CV and generate branded document
+	const handleSaveAndGenerateBranded = useCallback(async () => {
+		if (!extractedData) return;
+
+		setIsSavingAndGenerating(true);
+		try {
+			// First save the CV using Convex
+			await createAndSubmit({
+				jobTitle: extractedData.personalInfo.profession || "Professional",
+				formData: {
+					executiveSummary: extractedData.executiveSummary,
+					personalInfo: extractedData.personalInfo,
+					workHistory: extractedData.workHistory,
+					education: extractedData.education,
+					skills: extractedData.skills,
+				},
+				isAiAssisted: true,
+				sourceJobSeekerId: isJobSeekerSource ? (jobSeekerId ?? undefined) : undefined,
+			});
+
+			// Then generate the branded document
+			const response = await fetch("/api/cv/generate", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					executiveSummary: extractedData.executiveSummary,
+					jobTitle: extractedData.personalInfo.profession || "Professional",
+					personalInfo: extractedData.personalInfo,
+					workHistory: extractedData.workHistory,
+					education: extractedData.education,
+					skills: extractedData.skills,
+				}),
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.error || "Failed to generate branded CV");
+			}
+
+			// Get the blob and download it
+			const blob = await response.blob();
+			const contentDisposition = response.headers.get("content-disposition");
+			let filename = "CV.docx";
+			if (contentDisposition) {
+				const match = contentDisposition.match(/filename="?([^"]+)"?/);
+				if (match) filename = match[1];
+			}
+
+			// Create download link
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			window.URL.revokeObjectURL(url);
+			document.body.removeChild(a);
+
+			toast.success(`CV saved and branded document downloaded: ${filename}`);
+			setExtractedData(null);
+			router.push("/dashboard/curriculum-vitae");
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to save and generate CV";
+			toast.error(errorMessage);
+		} finally {
+			setIsSavingAndGenerating(false);
+		}
+	}, [extractedData, createAndSubmit, isJobSeekerSource, jobSeekerId, router]);
 
 	const isProcessing = extractCVMutation.isPending;
-	const isSavingDirect = saveCVDirectMutation.isPending;
+	const isGeneratingBranded = generateBrandedCVMutation.isPending;
+	const isAnyMutationPending = isSavingCV || isGeneratingBranded || isSavingAndGenerating;
 
 	return (
 		<div className="container mx-auto py-8 px-4">
 			<div className="max-w-4xl mx-auto space-y-6">
 				{/* Header */}
 				<div className="text-center">
-					<h1 className="text-3xl font-bold tracking-tight">AI CV Extraction</h1>
+					<h1 className="text-3xl font-bold tracking-tight flex items-center justify-center gap-2">
+						{isBrandingMode && (
+							<>
+								<Palette className="h-8 w-8 text-blue-500" />
+								Convert CV to Branding
+							</>
+						)}
+						{isExtractBrandingMode && (
+							<>
+								<FileOutput className="h-8 w-8 text-green-500" />
+								AI Extract + Branding
+							</>
+						)}
+						{!isBrandingMode && !isExtractBrandingMode && (
+							<>
+								<Sparkles className="h-8 w-8 text-purple-500" />
+								AI CV Extraction
+							</>
+						)}
+					</h1>
 					<p className="text-muted-foreground mt-2">
-						Upload your CV and let AI extract the information automatically
+						{isBrandingMode && "Extract CV data and convert it to your company's branded template"}
+						{isExtractBrandingMode &&
+							"Extract CV data with AI and automatically generate a branded document"}
+						{!isBrandingMode &&
+							!isExtractBrandingMode &&
+							"Upload your CV and let AI extract the information automatically"}
 					</p>
 				</div>
 
@@ -258,43 +442,26 @@ function AIExtractPageContent() {
 										<span className="font-medium">Phone:</span> {jobSeeker.mobileNumber}
 									</p>
 								</div>
-								<Button
-									onClick={handleExtractFromBlob}
-									className="w-full"
-									size="lg"
-									disabled={!effectiveBlobUrl}
-								>
-									<Sparkles className="mr-2 h-4 w-4" />
-									Start AI Extraction
-								</Button>
-							</div>
-						</CardContent>
-					</Card>
-				)}
-
-				{/* Blob URL Section (non-job-seeker) */}
-				{effectiveBlobUrl && !isJobSeekerSource && !extractedData && !isProcessing && (
-					<Card className="border-primary/50 bg-primary/5">
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<LinkIcon className="h-5 w-5" />
-								CV from Blob Storage
-							</CardTitle>
-							<CardDescription>
-								A CV file has been loaded from blob storage. Click the button below to start AI
-								extraction.
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<div className="space-y-4">
-								<div className="rounded-lg bg-muted p-3">
-									<p className="text-xs font-medium text-muted-foreground mb-1">Blob URL:</p>
-									<p className="text-sm break-all">{effectiveBlobUrl}</p>
-								</div>
-								<Button onClick={handleExtractFromBlob} className="w-full" size="lg">
-									<Sparkles className="mr-2 h-4 w-4" />
-									Start AI Extraction
-								</Button>
+								{isFetchingUrl ? (
+									<div className="flex items-center justify-center gap-2 py-4">
+										<Loader2 className="h-4 w-4 animate-spin" />
+										<span className="text-sm text-muted-foreground">Loading CV...</span>
+									</div>
+								) : urlError ? (
+									<Alert variant="destructive">
+										<AlertCircle className="h-4 w-4" />
+										<AlertDescription>{urlError}</AlertDescription>
+									</Alert>
+								) : freshCvUrl ? (
+									<Button onClick={handleExtractFromUrl} className="w-full" size="lg">
+										<Sparkles className="mr-2 h-4 w-4" />
+										Start AI Extraction
+									</Button>
+								) : (
+									<p className="text-sm text-muted-foreground text-center">
+										No CV file found for this job seeker. Please upload a CV first.
+									</p>
+								)}
 							</div>
 						</CardContent>
 					</Card>
@@ -335,24 +502,8 @@ function AIExtractPageContent() {
 					</Card>
 				)}
 
-				{/* Choose from uploaded CVs - only in initial state */}
-				{!effectiveBlobUrl && !selectedFile && !extractedData && !isJobSeekerSource && (
-					<Card>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<LinkIcon className="h-5 w-5" />
-								Or choose from your uploaded CVs
-							</CardTitle>
-							<CardDescription>Select an existing file to run AI extraction</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<BlobCVsList variant="picker" />
-						</CardContent>
-					</Card>
-				)}
-
-				{/* Upload Section */}
-				{!effectiveBlobUrl && !selectedFile && !extractedData && !isJobSeekerSource && (
+				{/* Upload Section - only show when not coming from job seeker and no file selected */}
+				{!selectedFile && !extractedData && !isJobSeekerSource && !isProcessing && (
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
@@ -624,30 +775,84 @@ function AIExtractPageContent() {
 							</div>
 
 							{/* Action Buttons */}
-							<div className="flex gap-4 pt-6">
-								<Button
-									onClick={handleSaveCVDirectly}
-									disabled={isSavingDirect}
-									className="flex-1 bg-green-600 hover:bg-green-700"
-								>
-									{isSavingDirect ? (
-										<>
-											<Loader2 className="h-4 w-4 animate-spin mr-2" />
-											Saving CV...
-										</>
-									) : (
-										"Save CV Now"
-									)}
-								</Button>
-								<Button onClick={handleSaveCV} variant="outline" className="flex-1">
-									Continue to Edit
-								</Button>
+							<div className="flex flex-col gap-4 pt-6">
+								{/* Primary Actions Row */}
+								<div className="flex gap-4">
+									<Button
+										onClick={handleSaveCVDirectly}
+										disabled={isAnyMutationPending}
+										className="flex-1 bg-green-600 hover:bg-green-700"
+									>
+										{isSavingCV ? (
+											<>
+												<Loader2 className="h-4 w-4 animate-spin mr-2" />
+												Saving CV...
+											</>
+										) : (
+											<>
+												<CheckCircle className="h-4 w-4 mr-2" />
+												Save CV Now
+											</>
+										)}
+									</Button>
+									<Button
+										onClick={handleContinueToEdit}
+										variant="outline"
+										className="flex-1"
+										disabled={isAnyMutationPending}
+									>
+										Continue to Edit
+									</Button>
+								</div>
+
+								{/* Branding Actions Row */}
+								<div className="flex gap-4">
+									<Button
+										onClick={handleGenerateBrandedCV}
+										disabled={isAnyMutationPending}
+										variant="outline"
+										className="flex-1 border-blue-500 text-blue-600 hover:bg-blue-50"
+									>
+										{isGeneratingBranded ? (
+											<>
+												<Loader2 className="h-4 w-4 animate-spin mr-2" />
+												Generating...
+											</>
+										) : (
+											<>
+												<Palette className="h-4 w-4 mr-2" />
+												Download Branded CV
+											</>
+										)}
+									</Button>
+									<Button
+										onClick={handleSaveAndGenerateBranded}
+										disabled={isAnyMutationPending}
+										className="flex-1 bg-blue-600 hover:bg-blue-700"
+									>
+										{isSavingAndGenerating ? (
+											<>
+												<Loader2 className="h-4 w-4 animate-spin mr-2" />
+												Processing...
+											</>
+										) : (
+											<>
+												<FileOutput className="h-4 w-4 mr-2" />
+												Save + Download Branded
+											</>
+										)}
+									</Button>
+								</div>
+
+								{/* Secondary Actions */}
 								<Button
 									variant="ghost"
 									onClick={() => {
 										setExtractedData(null);
 										setSelectedFile(null);
 									}}
+									disabled={isAnyMutationPending}
+									className="w-full"
 								>
 									Upload Another CV
 								</Button>

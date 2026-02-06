@@ -4,16 +4,16 @@ import { BookOpen } from "lucide-react";
 import Link from "next/link";
 
 import { useBuiltCVs } from "../../queries/cv";
-import { CVCard, type BuiltCV } from "./cv-card";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
+import { type BuiltCV, CVCard } from "./cv-card";
 
 interface BuiltCVsListProps {
 	variant: "cards";
 }
 
 export function BuiltCVsList({ variant }: BuiltCVsListProps) {
-	const { data, isLoading, error } = useBuiltCVs();
+	const { data, isLoading } = useBuiltCVs();
 	const cvs = (data?.data ?? []) as BuiltCV[];
 
 	if (isLoading) {
@@ -23,14 +23,6 @@ export function BuiltCVsList({ variant }: BuiltCVsListProps) {
 					<Skeleton key={i} className="h-48 w-full" />
 				))}
 			</div>
-		);
-	}
-
-	if (error) {
-		return (
-			<p className="text-sm text-destructive">
-				{error instanceof Error ? error.message : "Failed to load CVs"}
-			</p>
 		);
 	}
 

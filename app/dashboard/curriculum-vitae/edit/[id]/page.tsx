@@ -1,41 +1,42 @@
 "use client";
 
 import { useAtom, useSetAtom } from "jotai";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../../components/ui/card";
-import { Button } from "../../../../../components/ui/button";
-import { PersonalInfoForm } from "../../../../../components/CVForm/PersonalInfoForm";
-import { WorkExperienceForm } from "../../../../../components/CVForm/WorkExperienceForm";
+import { ChevronDown, Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { use, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { EducationForm } from "../../../../../components/CVForm/EducationForm";
+import { ExecutiveSummaryForm } from "../../../../../components/CVForm/ExecutiveSummary";
+import { PersonalInfoForm } from "../../../../../components/CVForm/PersonalInfoForm";
 import { SkillsForm } from "../../../../../components/CVForm/SkillsForm";
+import { WorkExperienceForm } from "../../../../../components/CVForm/WorkExperienceForm";
+import { Badge } from "../../../../../components/ui/badge";
+import { Button } from "../../../../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../../components/ui/card";
+import type { Id } from "../../../../../convex/_generated/dataModel";
+// import { DraftCV } from "@/db/schema";
+import { useCV } from "../../../../../hooks/use-cv";
+import { cn } from "../../../../../lib/utils";
+import { useSubmitCV, useUpdateDraft } from "../../../../../queries/cv";
+import type {
+	CVFormData,
+	EducationSchema,
+	ExecutiveSummarySchema,
+	PersonalInfoSchema,
+	SkillsSchema,
+	WorkExperienceSchema,
+} from "../../../../../schemas/cv.schema";
 import {
 	currentStepAtom,
+	educationAtom,
+	executiveSummaryAtom,
 	personalInfoAtom,
-	skillsAtom,
 	resetFormAtom,
+	skillsAtom,
 	stepsAtom,
 	updateStepCompletionAtom,
 	workExperienceAtom,
-	educationAtom,
-	executiveSummaryAtom,
 } from "../../../../../store/cv-form-store";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import type {
-	PersonalInfoSchema,
-	WorkExperienceSchema,
-	EducationSchema,
-	SkillsSchema,
-	ExecutiveSummarySchema,
-	CVFormData,
-} from "../../../../../schemas/cv.schema";
-import { cn } from "../../../../../lib/utils";
-import { useSubmitCVMutation } from "../../../../../queries/cv";
-import { ExecutiveSummaryForm } from "../../../../../components/CVForm/ExecutiveSummary";
-import { ChevronDown, Loader } from "lucide-react";
-// import { DraftCV } from "@/db/schema";
-import { useCV } from "../../../../../hooks/use-cv";
-import { use, useEffect } from "react";
-import { Badge } from "../../../../../components/ui/badge";
 
 interface EditCVPageProps {
 	params: Promise<{
@@ -46,7 +47,10 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 	const router = useRouter();
 	const { id } = use(params);
 
-	const { data: cv, isLoading, error, isError, refetch } = useCV(id || "");
+	// Convex useQuery returns the data directly, undefined while loading, or null if not found
+	const cvResult = useCV(id);
+	const isLoading = cvResult === undefined;
+	const cv = cvResult ?? null;
 
 	// Helper function to safely format dates
 	const formatDateSafe = (dateStr: string | undefined | null): string => {
@@ -55,7 +59,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 		}
 		try {
 			const date = new Date(dateStr);
-			if (isNaN(date.getTime())) {
+			if (Number.isNaN(date.getTime())) {
 				return "N/A";
 			}
 			return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
@@ -74,33 +78,129 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 	const [workExperience, setWorkExperience] = useAtom(workExperienceAtom);
 	const [education, setEducation] = useAtom(educationAtom);
 
-	// const saveDraftMutation = useSaveDraftMutation();
-	const submitCVMutation = useSubmitCVMutation();
+	const updateDraft = useUpdateDraft();
+	const submitCV = useSubmitCV();
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isSavingDraft, setIsSavingDraft] = useState(false);
+
+	// Helper functions to map lenient Convex data to strict schema types
+	const mapWorkExperiences = (
+		experiences:
+			| Array<{
+					company?: string;
+					position?: string;
+					startDate?: string;
+					endDate?: string;
+					current?: boolean;
+					duties?: string[];
+					reasonForLeaving?: string;
+			  }>
+			| undefined
+	): WorkExperienceSchema["experiences"] => {
+		if (!experiences) return [];
+		return experiences.map((exp) => ({
+			company: exp.company ?? "",
+			position: exp.position ?? "",
+			startDate: exp.startDate ?? "",
+			endDate: exp.endDate ?? "",
+			current: exp.current ?? false,
+			duties: exp.duties ?? [],
+			reasonForLeaving: exp.reasonForLeaving ?? "",
+		}));
+	};
+
+	const mapEducations = (
+		educations:
+			| Array<{
+					institution?: string;
+					qualification?: string;
+					completionDate?: number;
+					completed?: boolean;
+			  }>
+			| undefined
+	): EducationSchema["educations"] => {
+		if (!educations) return [];
+		return educations.map((edu) => ({
+			institution: edu.institution ?? "",
+			qualification: edu.qualification ?? "",
+			completionDate: edu.completionDate ?? new Date().getFullYear(),
+			completed: edu.completed ?? false,
+		}));
+	};
+
+	const mapSkills = (
+		skills:
+			| {
+					computerSkills?: string[];
+					otherSkills?: string[];
+					skillsMatrix?: Array<{
+						skill?: string;
+						yearsExperience?: number;
+						proficiency?: "Beginner" | "Intermediate" | "Advanced" | "Expert";
+						lastUsed?: number;
+					}>;
+			  }
+			| undefined
+	): SkillsSchema => {
+		if (!skills) return { computerSkills: [], otherSkills: [], skillsMatrix: [] };
+		return {
+			computerSkills: skills.computerSkills ?? [],
+			otherSkills: skills.otherSkills ?? [],
+			skillsMatrix: (skills.skillsMatrix ?? []).map((s) => ({
+				skill: s.skill ?? "",
+				yearsExperience: s.yearsExperience ?? 0,
+				proficiency: s.proficiency ?? "Beginner",
+				lastUsed: s.lastUsed ?? new Date().getFullYear(),
+			})),
+		};
+	};
 
 	// Initialize form with CV data when it loads
 	useEffect(() => {
 		if (cv?.formData) {
 			setExecutiveSummary({
-				executiveSummary: cv.formData.executiveSummary,
-				jobTitle: cv.jobTitle,
+				executiveSummary: cv.formData.executiveSummary ?? "",
+				jobTitle: cv.jobTitle ?? "",
 			});
-			setPersonalInfo(cv.formData.personalInfo);
-			setWorkExperience({
-				type: "set",
-				data: cv.formData.workHistory.experiences,
-			});
-			setEducation({
-				type: "set",
-				data: cv.formData.education.educations,
-			});
-			setSkills({ type: "set", data: cv.formData.skills });
+			// Only set personal info if it exists, otherwise use empty defaults
+			if (cv.formData.personalInfo) {
+				setPersonalInfo(cv.formData.personalInfo);
+			}
+			// Only set work experience if it exists
+			if (cv.formData.workHistory?.experiences) {
+				setWorkExperience({
+					type: "set",
+					data: mapWorkExperiences(cv.formData.workHistory.experiences),
+				});
+			}
+			// Only set education if it exists
+			if (cv.formData.education?.educations) {
+				setEducation({
+					type: "set",
+					data: mapEducations(cv.formData.education.educations),
+				});
+			}
+			// Only set skills if it exists
+			if (cv.formData.skills) {
+				setSkills({ type: "set", data: mapSkills(cv.formData.skills) });
+			}
 
-			// Mark all steps as completed since we have data
-			updateStepCompletion("executiveSummary");
-			updateStepCompletion("personal");
-			updateStepCompletion("work");
-			updateStepCompletion("education");
-			updateStepCompletion("skills");
+			// Mark steps as completed only if they have data
+			if (cv.formData.executiveSummary) {
+				updateStepCompletion("executiveSummary");
+			}
+			if (cv.formData.personalInfo) {
+				updateStepCompletion("personal");
+			}
+			if (cv.formData.workHistory?.experiences?.length) {
+				updateStepCompletion("work");
+			}
+			if (cv.formData.education?.educations?.length) {
+				updateStepCompletion("education");
+			}
+			if (cv.formData.skills) {
+				updateStepCompletion("skills");
+			}
 		}
 	}, [
 		cv?.formData,
@@ -173,6 +273,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 		}
 
 		try {
+			setIsSubmitting(true);
 			const cvData: CVFormData = {
 				executiveSummary: executiveSummary.executiveSummary,
 				personalInfo,
@@ -181,22 +282,10 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 				skills,
 			};
 
-			// Use the API to update the CV
-			const response = await fetch(`/api/cv/${id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					formData: cvData,
-					jobTitle: executiveSummary.jobTitle,
-					status: "completed",
-				}),
+			await submitCV({
+				id: id as Id<"cvs">,
+				formData: cvData,
 			});
-
-			if (!response.ok) {
-				throw new Error("Failed to update CV");
-			}
 
 			toast.success("CV updated successfully!");
 			resetForm();
@@ -205,6 +294,8 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 			toast.error("Failed to update CV. Please try again.", {
 				description: error instanceof Error ? error.message : "Unknown error",
 			});
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
@@ -215,6 +306,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 		}
 
 		try {
+			setIsSavingDraft(true);
 			const cvData: CVFormData = {
 				executiveSummary: executiveSummary.executiveSummary,
 				personalInfo,
@@ -223,22 +315,11 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 				skills,
 			};
 
-			// Use the API to update the CV as draft
-			const response = await fetch(`/api/cv/${id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					formData: cvData,
-					jobTitle: executiveSummary.jobTitle,
-					status: "draft",
-				}),
+			await updateDraft({
+				id: id as Id<"cvs">,
+				jobTitle: executiveSummary.jobTitle,
+				formData: cvData,
 			});
-
-			if (!response.ok) {
-				throw new Error("Failed to save draft");
-			}
 
 			toast.success("Draft saved successfully!");
 			router.push("/dashboard");
@@ -246,6 +327,8 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 			toast.error("Failed to save draft. Please try again.", {
 				description: error instanceof Error ? error.message : "Unknown error",
 			});
+		} finally {
+			setIsSavingDraft(false);
 		}
 	};
 
@@ -501,7 +584,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 			<div className="container mx-auto max-w-4xl space-y-8 py-6">
 				<div className="flex min-h-[400px] items-center justify-center">
 					<div className="text-center">
-						<div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900"></div>
+						<div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-gray-900" />
 						<p className="text-gray-600">Loading CV data...</p>
 					</div>
 				</div>
@@ -509,16 +592,15 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 		);
 	}
 
-	// Error state
-	if (isError || !cv) {
+	// Error state (CV not found)
+	if (!isLoading && !cv) {
 		return (
 			<div className="container mx-auto max-w-4xl space-y-8 py-6">
 				<div className="flex min-h-[400px] items-center justify-center">
 					<div className="text-center">
-						<p className="mb-4 text-red-600">{error?.message || "CV not found"}</p>
+						<p className="mb-4 text-red-600">CV not found</p>
 						<div className="flex gap-2 justify-center items-center">
-							<Button onClick={() => refetch()}>Try Again</Button>
-							<Button variant={"outline"} onClick={() => router.push("/dashboard")}>
+							<Button variant="outline" onClick={() => router.push("/dashboard")}>
 								Back to Dashboard
 							</Button>
 						</div>
@@ -539,10 +621,11 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 			<div className="relative">
 				<div className="flex items-center justify-between">
 					{steps.map((step, index) => (
-						<div
+						<button
+							type="button"
 							onClick={() => setCurrentStep(index)}
 							key={step.id}
-							className="group flex cursor-pointer flex-col items-center gap-2 relative"
+							className="group flex cursor-pointer flex-col items-center gap-2 relative bg-transparent border-0 p-0"
 						>
 							{index === currentStep && (
 								<ChevronDown className="h-5 w-5 text-primary absolute -top-5 animate-bounce" />
@@ -574,7 +657,7 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 							>
 								{step.title}
 							</span>
-						</div>
+						</button>
 					))}
 				</div>
 				{/* Progress line */}
@@ -612,8 +695,8 @@ export default function EditCVPage({ params }: EditCVPageProps) {
 						</Button>
 					)}
 					{currentStep === steps.length - 1 ? (
-						<Button disabled={submitCVMutation.isPending} onClick={handleFinalSubmit}>
-							{submitCVMutation.isPending ? (
+						<Button disabled={isSubmitting} onClick={handleFinalSubmit}>
+							{isSubmitting ? (
 								<>
 									<Loader className="h-4 w-4 animate-spin" /> Updating CV
 								</>

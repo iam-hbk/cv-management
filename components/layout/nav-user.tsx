@@ -22,11 +22,11 @@ import {
 } from "../ui/dropdown-menu";
 import { useSidebar } from "../ui/sidebar";
 
-import { signOut, useSession } from "next-auth/react";
+import { authClient } from "../../lib/auth-client";
 import { Button } from "../ui/button";
 
 export function NavUser() {
-	const { data: session } = useSession();
+	const { data: session } = authClient.useSession();
 	const user = session?.user;
 	const { isMobile } = useSidebar();
 
@@ -63,10 +63,10 @@ export function NavUser() {
 						<Avatar className="h-8 w-8 rounded-lg">
 							<AvatarImage src={user.image || ""} alt={user.name || "username"} />
 							<AvatarFallback className="rounded-lg">
-								{user.name
-									?.split(" ")
-									.map((n) => n[0])
-									.join("")}
+							{user.name
+								?.split(" ")
+								.map((n: string) => n[0])
+								.join("")}
 							</AvatarFallback>
 						</Avatar>
 						<div className="grid flex-1 text-left text-sm leading-tight">
@@ -98,7 +98,7 @@ export function NavUser() {
 					</DropdownMenuItem>
 				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem onClick={() => signOut()}>
+				<DropdownMenuItem onClick={() => authClient.signOut()}>
 					<LogOut />
 					Log out
 				</DropdownMenuItem>

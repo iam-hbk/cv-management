@@ -1,31 +1,41 @@
 "use client";
 
-import { useQuery, useMutation, useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Id, Doc } from "@/convex/_generated/dataModel";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import {
-	ArrowLeft,
-	Trash2,
-	Download,
-	CheckCircle,
-	XCircle,
-	Star,
-	Award,
-	Briefcase,
-} from "lucide-react";
-import { toast } from "sonner";
-
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ActivityTimeline } from "@/components/admin/activity-timeline";
 import { ApplicationStatusBadge } from "@/components/admin/applications-columns";
 import { DeleteConfirmation } from "@/components/admin/delete-confirmation";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
+import {
+	ArrowLeft,
+	Award,
+	Briefcase,
+	CheckCircle,
+	Download,
+	FileOutput,
+	Palette,
+	Sparkles,
+	Star,
+	Trash2,
+	XCircle,
+} from "lucide-react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 // Type definition for application with details
 type ApplicationWithDetails = {
@@ -223,12 +233,50 @@ export default function ApplicationDetailPage() {
 						</div>
 						<Separator />
 						{jobSeeker?.cvUploadPath && (
-							<Button asChild className="w-full">
-								<a href={jobSeeker.cvUploadPath} target="_blank" rel="noopener noreferrer">
-									<Download className="mr-2 h-4 w-4" />
-									Download CV
-								</a>
-							</Button>
+							<div className="space-y-2">
+								<Button asChild className="w-full">
+									<a href={jobSeeker.cvUploadPath} target="_blank" rel="noopener noreferrer">
+										<Download className="mr-2 h-4 w-4" />
+										Download CV
+									</a>
+								</Button>
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="outline" className="w-full">
+											<FileOutput className="mr-2 h-4 w-4" />
+											CV Actions
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent className="w-56">
+										<DropdownMenuLabel>Process CV</DropdownMenuLabel>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem asChild>
+											<Link
+												href={`/dashboard/curriculum-vitae/new/ai-extract?source=job-seeker&id=${jobSeeker._id}`}
+											>
+												<Sparkles className="mr-2 h-4 w-4 text-purple-500" />
+												AI Extract CV
+											</Link>
+										</DropdownMenuItem>
+										<DropdownMenuItem asChild>
+											<Link
+												href={`/dashboard/curriculum-vitae/new/ai-extract?source=job-seeker&id=${jobSeeker._id}&mode=branding`}
+											>
+												<Palette className="mr-2 h-4 w-4 text-blue-500" />
+												Convert to Branding
+											</Link>
+										</DropdownMenuItem>
+										<DropdownMenuItem asChild>
+											<Link
+												href={`/dashboard/curriculum-vitae/new/ai-extract?source=job-seeker&id=${jobSeeker._id}&mode=extract-branding`}
+											>
+												<FileOutput className="mr-2 h-4 w-4 text-green-500" />
+												AI Extract + Branding
+											</Link>
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</div>
 						)}
 					</CardContent>
 				</Card>

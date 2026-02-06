@@ -2,11 +2,11 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import type {
-	PersonalInfoSchema,
-	WorkExperienceSchema,
 	EducationSchema,
-	SkillsSchema,
 	ExecutiveSummarySchema,
+	PersonalInfoSchema,
+	SkillsSchema,
+	WorkExperienceSchema,
 } from "../schemas/cv.schema";
 
 // Define the step type
@@ -40,7 +40,7 @@ const defaultPersonalInfo: PersonalInfoSchema = {
 	profession: "",
 	location: "",
 	gender: "other",
-	availability: "",
+	availability: "Negotiable",
 	nationality: "",
 	currentSalary: 0,
 	expectedSalary: 0,

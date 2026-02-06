@@ -1,16 +1,15 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { ArrowRight, PenSquare } from "lucide-react";
-import { Button } from "../components/ui/button";
+import Link from "next/link";
 
 const LandingPage = () => {
 	return (
 		<div className="min-h-screen relative overflow-hidden flex items-center justify-center">
 			{/* Animated gradient background */}
 			<div className="absolute inset-0 bg-linear-to-br from-primary via-tertiary to-accent animate-landing-gradient">
-				<div className="absolute inset-0 backdrop-blur-3xl"></div>
+				<div className="absolute inset-0 backdrop-blur-3xl" />
 			</div>
 
 			{/* Content overlay */}

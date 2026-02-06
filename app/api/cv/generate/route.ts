@@ -1,14 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../lib/auth";
+import { type NextRequest, NextResponse } from "next/server";
 import { clientEnv } from "../../../../config/client-env";
+import { isAuthenticated } from "../../../../lib/auth-server";
 import { parseContentDispositionFilename } from "../../../../lib/content-disposition";
 import { sanitizeForCvGenerate } from "../../../../lib/sanitize-cv-generate";
+
+// Type for validation errors from external API
+interface ValidationError {
+	loc?: string[];
+	msg: string;
+	type?: string;
+}
 
 export async function POST(request: NextRequest) {
 	try {
 		// Check authentication
-		const session = await auth();
-		if (!session?.user?.id) {
+		const session = await isAuthenticated();
+		if (!session) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
 
@@ -35,7 +42,7 @@ export async function POST(request: NextRequest) {
 					// Format validation errors nicely
 					if (Array.isArray(errorData.detail)) {
 						errorMessage = `Validation errors:\n${errorData.detail
-							.map((err: any) => `${err.loc?.join(".")}: ${err.msg}`)
+							.map((err: ValidationError) => `${err.loc?.join(".")}: ${err.msg}`)
 							.join("\n")}`;
 					} else {
 						errorMessage = JSON.stringify(errorData.detail, null, 2);

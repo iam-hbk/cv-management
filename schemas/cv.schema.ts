@@ -6,6 +6,19 @@ import { z } from "zod";
  * Unless you have read this comment and understand the consequences
  */
 
+// Availability options for filtering and forms
+export const AVAILABILITY_OPTIONS = [
+	"Immediate",
+	"1 Week",
+	"2 Weeks",
+	"1 Month",
+	"2 Months",
+	"3 Months",
+	"Negotiable",
+] as const;
+
+export type Availability = (typeof AVAILABILITY_OPTIONS)[number];
+
 export const executiveSummarySchema = z.object({
 	executiveSummary: z.string().min(50, "Executive summary must be detailed"),
 	jobTitle: z
@@ -22,14 +35,13 @@ export const personalInfoSchema = z.object({
 	profession: z.string().min(1, "Profession is required"),
 	location: z.string().min(1, "Location is required"),
 	gender: z.enum(["male", "female", "other"]),
-	availability: z.preprocess(
-		(val) => (val === "" || val === null || val === undefined ? undefined : val),
-		z.string().default("Not specified")
-	),
+	availability: z.enum(AVAILABILITY_OPTIONS, {
+		message: "Please select your availability",
+	}),
 	nationality: z.string().min(1, "Nationality is required"),
 	currentSalary: z.number().min(0, "Salary must be positive"),
 	expectedSalary: z.number().min(0, "Expected salary must be positive"),
-	driversLicense: z.boolean().default(false),
+	driversLicense: z.boolean(),
 	idNumber: z.string().min(1, "ID Number is required"),
 });
 
@@ -38,11 +50,11 @@ export const workExperienceSchema = z.object({
 		z.object({
 			company: z.string().min(1, "Required"),
 			position: z.string().min(1, "Required"),
-			startDate: z.string().default(""),
-			endDate: z.string().optional().default(""),
+			startDate: z.string(),
+			endDate: z.string().optional(),
 			current: z.boolean(),
 			duties: z.array(z.string().min(1, "Required")),
-			reasonForLeaving: z.string().default(""),
+			reasonForLeaving: z.string(),
 		})
 	),
 });
@@ -105,10 +117,7 @@ export const personalInfoSchemaLenient = z.object({
 	profession: z.string().default(""),
 	location: z.string().default(""),
 	gender: z.enum(["male", "female", "other"]).optional(),
-	availability: z.preprocess(
-		(val) => (val === "" || val === null || val === undefined ? undefined : val),
-		z.string().default("Not specified")
-	),
+	availability: z.enum(AVAILABILITY_OPTIONS).optional().default("Negotiable"),
 	nationality: z.string().default(""),
 	currentSalary: z.number().default(0),
 	expectedSalary: z.number().default(0),

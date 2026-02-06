@@ -1,4 +1,4 @@
-import type { CVFormData } from "../schemas/cv.schema";
+import type { Availability, CVFormData } from "../schemas/cv.schema";
 
 /**
  * API Schema types based on OpenAPI spec
@@ -19,7 +19,7 @@ export interface APIPersonalInfoSchema {
 	profession: string;
 	location: string;
 	gender: "male" | "female" | "other";
-	availability: string;
+	availability: Availability;
 	nationality: string;
 	currentSalary: number;
 	expectedSalary: number;
@@ -69,12 +69,6 @@ export interface APISkillsMatrixItem {
  * Transforms CV form data to match the API's CVSchema format
  */
 export function transformCVToAPIFormat(cvData: CVFormData): APICVSchema {
-	// Ensure availability is a non-empty string (API requires minLength 1)
-	const availability =
-		cvData.personalInfo.availability && cvData.personalInfo.availability.trim() !== ""
-			? cvData.personalInfo.availability
-			: "Not specified";
-
 	// Ensure executiveSummary is not empty (API requires minLength 1)
 	const executiveSummary =
 		cvData.executiveSummary && cvData.executiveSummary.trim() !== ""
@@ -91,7 +85,7 @@ export function transformCVToAPIFormat(cvData: CVFormData): APICVSchema {
 			profession: cvData.personalInfo.profession,
 			location: cvData.personalInfo.location,
 			gender: cvData.personalInfo.gender,
-			availability: availability,
+			availability: cvData.personalInfo.availability,
 			nationality: cvData.personalInfo.nationality?.trim()
 				? cvData.personalInfo.nationality
 				: "Not specified",

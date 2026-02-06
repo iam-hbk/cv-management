@@ -2,7 +2,6 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
@@ -11,24 +10,19 @@ import { type LoginFormData, loginSchema } from "../../schemas/auth.schema";
 import { useMutation } from "@tanstack/react-query";
 import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { authClient } from "../../lib/auth-client";
 
 export function LoginForm() {
 	const router = useRouter();
 	const mutation = useMutation({
 		mutationFn: async (values: LoginFormData) => {
-			const result = await signIn("credentials", {
+			const result = await authClient.signIn.email({
 				email: values.email,
 				password: values.password,
-				redirect: false,
 			});
-			if (!result) {
-				throw new Error("Something went wrong, please try again.");
-			}
+
 			if (result.error) {
-				if (result.error === "CredentialsSignin") {
-					throw new Error("Invalid credentials");
-				}
-				throw new Error(result.error || "Something went wrong, please try again.");
+				throw new Error(result.error.message || "Invalid credentials");
 			}
 
 			return result;

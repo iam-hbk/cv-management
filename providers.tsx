@@ -1,14 +1,24 @@
 "use client";
 
+import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ConvexProvider, ConvexReactClient } from "convex/react";
-import { useState, useEffect } from "react";
-import { Toaster } from "./components/ui/sonner";
+import { ConvexReactClient } from "convex/react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { useEffect, useState } from "react";
+import { Toaster } from "./components/ui/sonner";
+import { authClient } from "./lib/auth-client";
 
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+if (!convexUrl) {
+	throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is required");
+}
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+const convex = new ConvexReactClient(convexUrl);
+
+export default function Providers({
+	children,
+	initialToken,
+}: { children: React.ReactNode; initialToken?: string | null }) {
 	const [queryClient] = useState(() => new QueryClient());
 	const [mounted, setMounted] = useState(false);
 
@@ -18,7 +28,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
 	return (
 		<NuqsAdapter>
-			<ConvexProvider client={convex}>
+			<ConvexBetterAuthProvider client={convex} authClient={authClient} initialToken={initialToken}>
 				<QueryClientProvider client={queryClient}>
 					<div className="min-h-screen">
 						{mounted ? (
@@ -31,7 +41,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 						)}
 					</div>
 				</QueryClientProvider>
-			</ConvexProvider>
+			</ConvexBetterAuthProvider>
 		</NuqsAdapter>
 	);
 }

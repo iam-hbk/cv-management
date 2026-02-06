@@ -10,6 +10,7 @@ import { type RegisterFormData, registerSchema } from "../../schemas/auth.schema
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Loader } from "lucide-react";
+import { authClient } from "../../lib/auth-client";
 
 export function RegisterForm() {
 	const router = useRouter();
@@ -23,22 +24,17 @@ export function RegisterForm() {
 	});
 	const mutation = useMutation({
 		mutationFn: async (data: RegisterFormData) => {
-			const response = await fetch("/api/auth/register", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					email: data.email,
-					password: data.password,
-					confirmPassword: data.confirmPassword,
-				}),
+			const result = await authClient.signUp.email({
+				email: data.email,
+				password: data.password,
+				name: data.email.split("@")[0], // Use email username as default name
 			});
 
-			if (!response.ok) {
-				const data = await response.json();
-				throw new Error(data.error || "Registration failed");
+			if (result.error) {
+				throw new Error(result.error.message || "Registration failed");
 			}
 
-			return response.json();
+			return result;
 		},
 	});
 

@@ -1,17 +1,17 @@
 "use client";
 
-import Link from "next/link";
-import { Brain, FileEdit, Eye, Pencil } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Brain, Eye, FileEdit, Pencil } from "lucide-react";
+import Link from "next/link";
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 
 export interface BuiltCV {
 	id: string;
 	jobTitle: string;
-	createdAt: Date;
+	createdAt: Date | number;
 	createdBy: { name: string; email: string };
 	formData?: {
 		personalInfo?: { profession?: string; location?: string };

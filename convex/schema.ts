@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { cvFormDataValidator } from "./validators";
 
 export default defineSchema({
 	jobSeekers: defineTable({
@@ -59,4 +60,24 @@ export default defineSchema({
 	})
 		.index("by_entity", ["entityType", "entityId"])
 		.index("by_createdAt", ["createdAt"]),
+
+	// CVs table migrated from PostgreSQL
+	cvs: defineTable({
+		userId: v.string(), // Better Auth user ID
+		// Denormalized user info (stored at creation, no lookups needed)
+		creatorName: v.optional(v.string()),
+		creatorEmail: v.optional(v.string()),
+		status: v.union(v.literal("draft"), v.literal("completed")),
+		formData: cvFormDataValidator, // Properly typed CV form data
+		isAiAssisted: v.boolean(),
+		jobTitle: v.string(),
+		sourceJobSeekerId: v.optional(v.string()), // Optional Convex job seeker ID
+		createdAt: v.number(),
+		updatedAt: v.optional(v.number()),
+		updatedBy: v.optional(v.string()), // User ID who last updated
+		updatedByName: v.optional(v.string()), // Denormalized updater name
+		updatedByEmail: v.optional(v.string()), // Denormalized updater email
+	})
+		.index("by_user", ["userId"])
+		.index("by_status", ["status"]),
 });

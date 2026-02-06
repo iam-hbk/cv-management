@@ -1,12 +1,16 @@
 "use client";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PersonalInfoSchema, personalInfoSchema } from "../../schemas/cv.schema";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
-import { Input } from "../ui/input";
+import { useForm } from "react-hook-form";
+import {
+	AVAILABILITY_OPTIONS,
+	type PersonalInfoSchema,
+	personalInfoSchema,
+} from "../../schemas/cv.schema";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
-import { Select, SelectContent, SelectTrigger, SelectItem, SelectValue } from "../ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { Input } from "../ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 interface PersonalInfoFormProps {
 	onSubmit: (data: PersonalInfoSchema) => void;
@@ -137,7 +141,18 @@ export function PersonalInfoForm({ onSubmit, initialData }: PersonalInfoFormProp
 						<FormItem>
 							<FormLabel>Availability</FormLabel>
 							<FormControl>
-								<Input {...field} />
+								<Select onValueChange={field.onChange} defaultValue={field.value}>
+									<SelectTrigger>
+										<SelectValue placeholder="Select availability" />
+									</SelectTrigger>
+									<SelectContent>
+										{AVAILABILITY_OPTIONS.map((option) => (
+											<SelectItem key={option} value={option}>
+												{option}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</FormControl>
 							<FormMessage />
 						</FormItem>

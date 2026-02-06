@@ -7,6 +7,7 @@ import {
 	FileText,
 	LayoutDashboard,
 	Sparkles,
+	UserCog,
 	Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,6 +33,11 @@ const adminNavItems = [
 		title: "Dashboard",
 		href: "/dashboard",
 		icon: LayoutDashboard,
+	},
+	{
+		title: "Users",
+		href: "/dashboard/users",
+		icon: UserCog,
 	},
 	{
 		title: "Job Seekers",
@@ -72,7 +78,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const pathname = usePathname();
 
 	return (
-		<Sidebar variant="inset" {...props}>
+		<Sidebar variant="floating" {...props}>
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>

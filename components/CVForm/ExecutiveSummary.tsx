@@ -1,10 +1,10 @@
 "use client";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ExecutiveSummarySchema, executiveSummarySchema } from "../../schemas/cv.schema";
+import { useForm } from "react-hook-form";
+import { type ExecutiveSummarySchema, executiveSummarySchema } from "../../schemas/cv.schema";
+import { Button } from "../ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
-import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 
 interface ExecutiveSummaryFormProps {
@@ -63,8 +63,9 @@ export function ExecutiveSummaryForm({
 					<Button
 						type="button"
 						variant="outline"
-						onClick={() => {
-							if (form.formState.isValid) {
+						onClick={async () => {
+							const isValid = await form.trigger();
+							if (isValid) {
 								onSubmit(form.getValues());
 								onSaveDraft();
 							}

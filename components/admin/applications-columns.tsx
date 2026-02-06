@@ -1,9 +1,8 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -12,21 +11,25 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
 import {
-	Eye,
-	MoreHorizontal,
-	Trash2,
-	User,
+	Award,
 	Briefcase,
 	CheckCircle,
-	XCircle,
-	Star,
-	Award,
+	Eye,
+	FileOutput,
 	FileText,
+	MoreHorizontal,
+	Palette,
+	Sparkles,
+	Star,
+	Trash2,
+	User,
+	XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
 
 export type ApplicationWithDetails = Doc<"applications"> & {
 	jobSeeker?: Doc<"jobSeekers"> | null;
@@ -201,6 +204,36 @@ export const applicationColumns = ({
 									Download CV
 								</a>
 							</DropdownMenuItem>
+						)}
+						{application.jobSeeker && (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuLabel>CV Actions</DropdownMenuLabel>
+								<DropdownMenuItem asChild>
+									<Link
+										href={`/dashboard/curriculum-vitae/new/ai-extract?source=job-seeker&id=${application.jobSeeker._id}`}
+									>
+										<Sparkles className="mr-2 h-4 w-4 text-purple-500" />
+										AI Extract CV
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuItem asChild>
+									<Link
+										href={`/dashboard/curriculum-vitae/new/ai-extract?source=job-seeker&id=${application.jobSeeker._id}&mode=branding`}
+									>
+										<Palette className="mr-2 h-4 w-4 text-blue-500" />
+										Convert to Branding
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuItem asChild>
+									<Link
+										href={`/dashboard/curriculum-vitae/new/ai-extract?source=job-seeker&id=${application.jobSeeker._id}&mode=extract-branding`}
+									>
+										<FileOutput className="mr-2 h-4 w-4 text-green-500" />
+										AI Extract + Branding
+									</Link>
+								</DropdownMenuItem>
+							</>
 						)}
 						<DropdownMenuSeparator />
 						<DropdownMenuLabel>Change Status</DropdownMenuLabel>

@@ -1,41 +1,40 @@
 "use client";
 
 import { useAtom, useSetAtom } from "jotai";
-import { useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
-import { Button } from "../../../../components/ui/button";
-import { PersonalInfoForm } from "../../../../components/CVForm/PersonalInfoForm";
-import { WorkExperienceForm } from "../../../../components/CVForm/WorkExperienceForm";
+import { Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { EducationForm } from "../../../../components/CVForm/EducationForm";
+import { ExecutiveSummaryForm } from "../../../../components/CVForm/ExecutiveSummary";
+import { PersonalInfoForm } from "../../../../components/CVForm/PersonalInfoForm";
 import { SkillsForm } from "../../../../components/CVForm/SkillsForm";
+import { WorkExperienceForm } from "../../../../components/CVForm/WorkExperienceForm";
+import { Badge } from "../../../../components/ui/badge";
+import { Button } from "../../../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { cn } from "../../../../lib/utils";
+import { useCreateAndSubmitCV, useCreateDraft } from "../../../../queries/cv";
+import type {
+	CVFormData,
+	Cv,
+	EducationSchema,
+	ExecutiveSummarySchema,
+	PersonalInfoSchema,
+	SkillsSchema,
+	WorkExperienceSchema,
+} from "../../../../schemas/cv.schema";
 import {
 	currentStepAtom,
+	educationAtom,
+	executiveSummaryAtom,
 	personalInfoAtom,
-	skillsAtom,
 	resetFormAtom,
+	skillsAtom,
 	stepsAtom,
 	updateStepCompletionAtom,
 	workExperienceAtom,
-	educationAtom,
-	executiveSummaryAtom,
 } from "../../../../store/cv-form-store";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import type {
-	PersonalInfoSchema,
-	WorkExperienceSchema,
-	EducationSchema,
-	SkillsSchema,
-	ExecutiveSummarySchema,
-	CVFormData,
-	Cv,
-} from "../../../../schemas/cv.schema";
-import { cn } from "../../../../lib/utils";
-import { useSaveDraftMutation, useSubmitCVMutation } from "../../../../queries/cv";
-import { ExecutiveSummaryForm } from "../../../../components/CVForm/ExecutiveSummary";
-import { Loader } from "lucide-react";
-import { DraftCV } from "../../../../db/schema";
-import { Badge } from "../../../../components/ui/badge";
 
 export default function NewCVPage() {
 	const router = useRouter();
@@ -49,8 +48,13 @@ export default function NewCVPage() {
 	const [workExperience, setWorkExperience] = useAtom(workExperienceAtom);
 	const [education, setEducation] = useAtom(educationAtom);
 
-	const saveDraftMutation = useSaveDraftMutation();
-	const submitCVMutation = useSubmitCVMutation();
+	// Convex mutations
+	const createDraft = useCreateDraft();
+	const createAndSubmit = useCreateAndSubmitCV();
+
+	// Loading states
+	const [isSavingDraft, setIsSavingDraft] = useState(false);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// Load AI-extracted CV data from sessionStorage
 	useEffect(() => {
@@ -187,27 +191,7 @@ export default function NewCVPage() {
 
 	const handleFinalSubmit = async () => {
 		try {
-			const cvData: CVFormData = {
-				executiveSummary: "",
-				personalInfo,
-				workHistory: { experiences: workExperience },
-				education: { educations: education },
-				skills,
-			};
-
-			await submitCVMutation.mutateAsync(cvData);
-			toast.success("CV generated successfully!");
-			resetForm();
-			router.push("/dashboard");
-		} catch (error) {
-			toast.error("Failed to generate CV. Please try again.", {
-				description: error instanceof Error ? error.message : "Unknown error",
-			});
-		}
-	};
-
-	const handleSaveDraft = async () => {
-		try {
+			setIsSubmitting(true);
 			const cvData: CVFormData = {
 				executiveSummary: executiveSummary.executiveSummary,
 				personalInfo,
@@ -215,12 +199,41 @@ export default function NewCVPage() {
 				education: { educations: education },
 				skills,
 			};
-			const draftCV: DraftCV = {
+
+			await createAndSubmit({
+				jobTitle: executiveSummary.jobTitle || personalInfo.profession || "Untitled CV",
 				formData: cvData,
-				jobTitle: executiveSummary.jobTitle,
+				isAiAssisted: false,
+			});
+
+			toast.success("CV generated successfully!");
+			resetForm();
+			router.push("/dashboard");
+		} catch (error) {
+			toast.error("Failed to generate CV. Please try again.", {
+				description: error instanceof Error ? error.message : "Unknown error",
+			});
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handleSaveDraft = async () => {
+		try {
+			setIsSavingDraft(true);
+			const cvData: CVFormData = {
+				executiveSummary: executiveSummary.executiveSummary,
+				personalInfo,
+				workHistory: { experiences: workExperience },
+				education: { educations: education },
+				skills,
 			};
 
-			await saveDraftMutation.mutateAsync(draftCV);
+			await createDraft({
+				jobTitle: executiveSummary.jobTitle || "Untitled Draft",
+				formData: cvData,
+			});
+
 			toast.success("Draft saved successfully!");
 			resetForm();
 			router.push("/dashboard");
@@ -228,6 +241,8 @@ export default function NewCVPage() {
 			toast.error("Failed to save draft. Please try again.", {
 				description: error instanceof Error ? error.message : "Unknown error",
 			});
+		} finally {
+			setIsSavingDraft(false);
 		}
 	};
 
@@ -537,10 +552,11 @@ export default function NewCVPage() {
 			<div className="relative">
 				<div className="flex items-center justify-between">
 					{steps.map((step, index) => (
-						<div
+						<button
+							type="button"
 							onClick={() => setCurrentStep(index)}
 							key={step.id}
-							className="group flex cursor-pointer flex-col items-center gap-2"
+							className="group flex cursor-pointer flex-col items-center gap-2 bg-transparent border-0 p-0"
 						>
 							<div
 								className={cn(
@@ -570,7 +586,7 @@ export default function NewCVPage() {
 							>
 								{step.title}
 							</span>
-						</div>
+						</button>
 					))}
 				</div>
 				{/* Progress line */}
@@ -608,8 +624,8 @@ export default function NewCVPage() {
 						</Button>
 					)}
 					{currentStep === steps.length - 1 ? (
-						<Button disabled={submitCVMutation.isPending} onClick={handleFinalSubmit}>
-							{submitCVMutation.isPending ? (
+						<Button disabled={isSubmitting} onClick={handleFinalSubmit}>
+							{isSubmitting ? (
 								<>
 									<Loader className="h-4 w-4 animate-spin" /> Saving CV
 								</>

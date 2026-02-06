@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from "clsx";
+import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -23,7 +23,7 @@ Only output JSON. No commentary, no markdown, no code fences.
   - \`profession: string\`
   - \`location: string\`
   - \`gender: "male" | "female" | "other"\`
-  - \`availability: string\`
+  - \`availability: "Immediate" | "1 Week" | "2 Weeks" | "1 Month" | "2 Months" | "3 Months" | "Negotiable"\`
   - \`nationality: string\`
   - \`currentSalary: number >= 0\`
   - \`expectedSalary: number >= 0\`
@@ -65,7 +65,7 @@ Return exactly this object:
     "profession": "",
     "location": "",
     "gender": "other",
-    "availability": "",
+    "availability": "Negotiable",
     "nationality": "",
     "currentSalary": 0,
     "expectedSalary": 0,

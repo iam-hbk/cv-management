@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { Eye, Pencil } from "lucide-react";
-import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
-import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStandaloneCVs } from "@/queries/cv";
+import { format } from "date-fns";
+import { Eye, Pencil } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
 interface StandaloneCVRow {
 	id: string;
@@ -30,7 +30,7 @@ const SORT_OPTIONS = [
 ];
 
 export function StandaloneCVsTable() {
-	const { data, isLoading, error } = useStandaloneCVs();
+	const { data, isLoading } = useStandaloneCVs();
 	const [search, setSearch] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [sort, setSort] = useState("recent");
@@ -43,14 +43,19 @@ export function StandaloneCVsTable() {
 					id: string;
 					jobTitle: string;
 					status: string;
-					createdAt: Date | string;
+					createdAt: Date | string | number;
 					createdBy?: { name?: string; email?: string };
 				}>
 			).map((cv) => ({
 				id: cv.id,
 				jobTitle: cv.jobTitle,
 				status: cv.status ?? "draft",
-				createdAt: cv.createdAt instanceof Date ? cv.createdAt : new Date(cv.createdAt),
+				createdAt:
+					cv.createdAt instanceof Date
+						? cv.createdAt
+						: typeof cv.createdAt === "number"
+							? new Date(cv.createdAt)
+							: new Date(cv.createdAt),
 				createdBy: {
 					name: cv.createdBy?.name ?? "-",
 					email: cv.createdBy?.email ?? "",
@@ -140,14 +145,6 @@ export function StandaloneCVsTable() {
 				<Skeleton className="h-10 w-full max-w-sm" />
 				<Skeleton className="h-64 w-full" />
 			</div>
-		);
-	}
-
-	if (error) {
-		return (
-			<p className="text-sm text-destructive">
-				{error instanceof Error ? error.message : "Failed to load CVs"}
-			</p>
 		);
 	}
 

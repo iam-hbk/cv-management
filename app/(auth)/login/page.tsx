@@ -1,3 +1,6 @@
+import { ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { LoginForm } from "../../../components/auth/login-form";
 import {
 	Card,
@@ -7,9 +10,6 @@ import {
 	CardTitle,
 } from "../../../components/ui/card";
 import { Separator } from "../../../components/ui/separator";
-import { ArrowLeft } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
 
 export default function LoginPage() {
 	return (
@@ -41,12 +41,9 @@ export default function LoginPage() {
 				</CardHeader>
 				<CardContent>
 					<LoginForm />
-					<div className="mt-4 text-center text-sm">
-						Don&apos;t have an account?{" "}
-						<Link href="/register" className="text-primary hover:underline">
-							Register
-						</Link>
-					</div>
+					<p className="mt-4 text-center text-xs text-muted-foreground">
+						Contact your administrator if you need access.
+					</p>
 				</CardContent>
 			</Card>
 		</div>

@@ -7,6 +7,76 @@ import type { Doc } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 import { r2 } from "./r2";
 
+// Helper to extract R2 key from a signed URL
+function extractR2KeyFromSignedUrl(signedUrl: string): string | null {
+	try {
+		const url = new URL(signedUrl);
+		// The path starts with / so we remove it
+		// e.g., /CVs/James-Bond.pdf -> CVs/James-Bond.pdf
+		const path = decodeURIComponent(url.pathname);
+		return path.startsWith("/") ? path.slice(1) : path;
+	} catch {
+		return null;
+	}
+}
+
+// --- Get Fresh CV URL Action ---
+
+export const getFreshCvUrl = action({
+	args: {
+		jobSeekerId: v.id("jobSeekers"),
+	},
+	handler: async (
+		ctx,
+		args
+	): Promise<{
+		url: string;
+		jobSeeker: {
+			id: string;
+			firstName: string;
+			lastName: string;
+			email: string;
+			mobileNumber: string;
+		};
+	}> => {
+		// 1. Get the job seeker
+		const jobSeeker: Doc<"jobSeekers"> | null = await ctx.runQuery(
+			api.jobSeekers.getJobSeekerById,
+			{
+				id: args.jobSeekerId,
+			}
+		);
+
+		if (!jobSeeker) {
+			throw new Error("Job seeker not found");
+		}
+
+		if (!jobSeeker.cvUploadPath) {
+			throw new Error("Job seeker has no CV uploaded");
+		}
+
+		// 2. Extract the R2 key from the stored signed URL
+		const key = extractR2KeyFromSignedUrl(jobSeeker.cvUploadPath);
+		if (!key) {
+			throw new Error("Invalid CV path format");
+		}
+
+		// 3. Generate a fresh signed URL (valid for 1 hour)
+		const freshUrl = await r2.getUrl(key, { expiresIn: 3600 });
+
+		return {
+			url: freshUrl,
+			jobSeeker: {
+				id: jobSeeker._id,
+				firstName: jobSeeker.firstName,
+				lastName: jobSeeker.lastName,
+				email: jobSeeker.email,
+				mobileNumber: jobSeeker.mobileNumber,
+			},
+		};
+	},
+});
+
 // --- Email helpers ---
 
 function jobSeekerAdminEmailHtml(props: {
