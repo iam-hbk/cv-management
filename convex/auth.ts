@@ -8,6 +8,13 @@ import authConfig from "./auth.config";
 
 const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
 
+// Trusted origins for Better Auth (prevents INVALID_ORIGIN errors)
+const trustedOrigins = [
+	"http://localhost:3000",
+	"https://cv-management-five.vercel.app",
+	// Add any other domains you deploy to
+];
+
 // The component client has methods needed for integrating Convex with Better Auth,
 // as well as helper methods for general use.
 export const authComponent = createClient<DataModel>(components.betterAuth);
@@ -15,6 +22,7 @@ export const authComponent = createClient<DataModel>(components.betterAuth);
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
 	return betterAuth({
 		baseURL: siteUrl,
+		trustedOrigins,
 		database: authComponent.adapter(ctx),
 		// Configure simple, non-verified email/password to get started
 		emailAndPassword: {

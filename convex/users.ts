@@ -150,7 +150,8 @@ export const createUser = action({
 		}
 
 		// Hash the password using bcryptjs
-		const bcrypt = await import("bcryptjs");
+		const bcryptModule = await import("bcryptjs");
+		const bcrypt = bcryptModule.default || bcryptModule;
 		const hashedPassword = await bcrypt.hash(password, 10);
 
 		// Create the user via internal mutation
