@@ -53,19 +53,10 @@ const LandingPage = () => {
 						size="lg"
 						className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 text-lg"
 					>
-						<Link href="/register">
+						<Link href="/login">
 							Get Started
 							<ArrowRight className="ml-2 h-5 w-5" />
 						</Link>
-					</Button>
-
-					<Button
-						asChild
-						variant="outline"
-						size="lg"
-						className="animate-signin-button px-8 text-lg hover:bg-white/20"
-					>
-						<Link href="/login">Sign In</Link>
 					</Button>
 				</div>
 			</div>
