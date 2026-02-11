@@ -33,8 +33,12 @@ export function NavUser() {
 	const router = useRouter();
 
 	const handleLogout = async () => {
-		await authClient.signOut();
-		router.push("/login");
+		try {
+			await authClient.signOut();
+		} finally {
+			router.replace("/login");
+			router.refresh();
+		}
 	};
 
 	if (!user) return null;
