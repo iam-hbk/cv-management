@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Compass, Home, LogIn } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function NotFound() {
@@ -10,6 +11,14 @@ export default function NotFound() {
 			<div className="pointer-events-none absolute -right-20 -bottom-20 h-72 w-72 rounded-full bg-secondary/20 blur-3xl" />
 
 			<div className="relative z-10 w-full max-w-2xl rounded-2xl border border-border/70 bg-card/85 p-8 text-center shadow-lg backdrop-blur-sm md:p-10">
+				<Image
+					priority
+					src="/logo.png"
+					alt="CV Builder"
+					width={56}
+					height={56}
+					className="mx-auto h-14 w-14"
+				/>
 				<p className="font-mono text-sm tracking-wide text-primary">Error 404</p>
 				<h1 className="mt-2 text-4xl font-semibold text-foreground md:text-5xl">
 					This page did not make the final cut
