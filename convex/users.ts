@@ -1,24 +1,7 @@
 import { v } from "convex/values";
-import { components, internal } from "./_generated/api";
-import { action, internalMutation, mutation, query } from "./_generated/server";
-import { authComponent } from "./auth";
-
-// Type for user data returned from Better Auth
-export interface UserData {
-	_id: string;
-	name: string;
-	email: string;
-	emailVerified: boolean;
-	image: string | null;
-	createdAt: number;
-	updatedAt: number;
-	twoFactorEnabled: boolean | null;
-	isAnonymous: boolean | null;
-	username: string | null;
-	displayUsername: string | null;
-	phoneNumber: string | null;
-	phoneNumberVerified: boolean | null;
-}
+import { components } from "./_generated/api";
+import { action, mutation, query } from "./_generated/server";
+import { authComponent, createAuth } from "./auth";
 
 // Get all users
 export const getUsers = query({
@@ -81,54 +64,7 @@ export const getUserById = query({
 	},
 });
 
-// Internal mutation to create user via Better Auth adapter
-export const createUserInternal = internalMutation({
-	args: {
-		name: v.string(),
-		email: v.string(),
-		hashedPassword: v.string(),
-	},
-	handler: async (ctx, { name, email, hashedPassword }) => {
-		const now = Date.now();
-
-		// Create the user
-		const user = await ctx.runMutation(components.betterAuth.adapter.create, {
-			input: {
-				model: "user",
-				data: {
-					name,
-					email,
-					emailVerified: false,
-					createdAt: now,
-					updatedAt: now,
-				},
-			},
-		});
-
-		if (!user) {
-			throw new Error("Failed to create user");
-		}
-
-		// Create the credential account with hashed password
-		await ctx.runMutation(components.betterAuth.adapter.create, {
-			input: {
-				model: "account",
-				data: {
-					userId: user._id,
-					accountId: user._id,
-					providerId: "credential",
-					password: hashedPassword,
-					createdAt: now,
-					updatedAt: now,
-				},
-			},
-		});
-
-		return user;
-	},
-});
-
-// Action to create a new user (uses internal mutation)
+// Action to create a new user (uses Better Auth's signUpEmail API)
 export const createUser = action({
 	args: {
 		name: v.string(),
@@ -149,19 +85,25 @@ export const createUser = action({
 			throw new Error("A user with this email already exists");
 		}
 
-		// Hash the password using bcryptjs
-		const bcryptModule = await import("bcryptjs");
-		const bcrypt = bcryptModule.default || bcryptModule;
-		const hashedPassword = await bcrypt.hash(password, 10);
-
-		// Create the user via internal mutation
-		const user = await ctx.runMutation(internal.users.createUserInternal, {
-			name,
-			email,
-			hashedPassword,
+		// Use Better Auth's API to create user with proper password hashing
+		const auth = createAuth(ctx);
+		const result = await auth.api.signUpEmail({
+			body: {
+				name,
+				email,
+				password,
+			},
 		});
 
-		return user;
+		if (!result.user) {
+			throw new Error("Failed to create user");
+		}
+
+		return {
+			_id: result.user.id,
+			name: result.user.name,
+			email: result.user.email,
+		};
 	},
 });
 
@@ -219,19 +161,23 @@ export const updateUser = mutation({
 	},
 });
 
-// Internal mutation to update password
-export const updatePasswordInternal = internalMutation({
+// Action to update user password using Better Auth's password hashing
+export const updateUserPassword = action({
 	args: {
-		userId: v.string(),
-		hashedPassword: v.string(),
+		id: v.string(),
+		newPassword: v.string(),
 	},
-	handler: async (ctx, { userId, hashedPassword }) => {
-		// Update the account password
-		const result = await ctx.runMutation(components.betterAuth.adapter.updateOne, {
+	handler: async (ctx, { id, newPassword }) => {
+		// Use Better Auth's crypto module for consistent password hashing
+		const { hashPassword } = await import("better-auth/crypto");
+		const hashedPassword = await hashPassword(newPassword);
+
+		// Update the account password directly
+		await ctx.runMutation(components.betterAuth.adapter.updateOne, {
 			input: {
 				model: "account",
 				where: [
-					{ field: "userId", value: userId },
+					{ field: "userId", value: id },
 					{ field: "providerId", value: "credential", connector: "AND" },
 				],
 				update: {
@@ -241,54 +187,9 @@ export const updatePasswordInternal = internalMutation({
 			},
 		});
 
-		return result;
-	},
-});
-
-// Action to update user password
-export const updateUserPassword = action({
-	args: {
-		id: v.string(),
-		newPassword: v.string(),
-	},
-	handler: async (ctx, { id, newPassword }) => {
-		// Hash the new password
-		const bcrypt = await import("bcryptjs");
-		const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-		// Update via internal mutation
-		await ctx.runMutation(internal.users.updatePasswordInternal, {
-			userId: id,
-			hashedPassword,
-		});
-
 		return { success: true };
 	},
 });
-
-// Seed admin response types
-type SeedAdminError = {
-	success: false;
-	message: string;
-	existingUserCount?: number;
-};
-
-type SeedAdminSuccess = {
-	success: true;
-	message: string;
-	user: {
-		id: string;
-		name: string;
-		email: string;
-	};
-	credentials: {
-		email: string;
-		password: string;
-	};
-	nextSteps: string[];
-};
-
-type SeedAdminResult = SeedAdminError | SeedAdminSuccess;
 
 // Seed the first admin user (run via: npx convex run users:seedAdmin)
 export const seedAdmin = action({
@@ -297,7 +198,7 @@ export const seedAdmin = action({
 		password: v.optional(v.string()),
 		name: v.optional(v.string()),
 	},
-	handler: async (ctx, args): Promise<SeedAdminResult> => {
+	handler: async (ctx, args) => {
 		// Default credentials - CHANGE AFTER FIRST LOGIN
 		const email = args.email ?? "admin@intobeing.com";
 		const password = args.password ?? "AdminTemp123!";
@@ -334,27 +235,30 @@ export const seedAdmin = action({
 			};
 		}
 
-		// Hash the password
-		const bcrypt = await import("bcryptjs");
-		const hashedPassword = await bcrypt.hash(password, 10);
-
-		// Create the admin user via internal mutation
-		const createdUser: { _id: string; name: string; email: string } = await ctx.runMutation(
-			internal.users.createUserInternal,
-			{
+		// Use Better Auth's API to create user with proper password hashing
+		const auth = createAuth(ctx);
+		const result = await auth.api.signUpEmail({
+			body: {
 				name,
 				email,
-				hashedPassword,
-			}
-		);
+				password,
+			},
+		});
+
+		if (!result.user) {
+			return {
+				success: false,
+				message: "Failed to create admin user",
+			};
+		}
 
 		return {
 			success: true,
 			message: "Admin user created successfully!",
 			user: {
-				id: createdUser._id,
-				name: createdUser.name,
-				email: createdUser.email,
+				id: result.user.id,
+				name: result.user.name,
+				email: result.user.email,
 			},
 			credentials: {
 				email,

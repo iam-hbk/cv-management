@@ -41,9 +41,14 @@ export default function LoginPage() {
 				</CardHeader>
 				<CardContent>
 					<LoginForm />
-					<p className="mt-4 text-center text-xs text-muted-foreground">
-						Contact your administrator if you need access.
-					</p>
+					<div className="mt-4 flex flex-col items-center gap-2">
+						<Link href="/forgot-password" className="text-sm text-primary hover:underline">
+							Forgot your password?
+						</Link>
+						<p className="text-center text-xs text-muted-foreground">
+							Contact your administrator if you need access.
+						</p>
+					</div>
 				</CardContent>
 			</Card>
 		</div>
